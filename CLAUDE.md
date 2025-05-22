@@ -1,3 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
 # MCP Subagent Server - Handover Document
 
 This document provides a high-level overview for engineers new to the `mcp-server-subagent` project.
