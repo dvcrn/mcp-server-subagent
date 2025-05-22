@@ -1,20 +1,37 @@
 {
   "name": "mcp-server-subagent",
   "version": "1.0.0",
+  "description": "MCP server for managing sub-agents",
   "type": "module",
   "bin": {
+    "mcp-server-subagent": "./build/index.js",
     "mcp-subagent": "./build/index.js"
   },
+  "files": [
+    "build"
+  ],
   "scripts": {
-    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "build": "tsc && chmod +x build/index.js",
+    "prepare": "npm run build",
     "start": "node build/index.js",
     "dev": "tsc && node build/index.js",
     "test": "tsc && node build/test.js"
   },
-  "keywords": ["mcp", "subagent"],
-  "author": "",
-  "license": "ISC",
-  "description": "MCP server for managing sub-agents",
+  "keywords": [
+    "mcp",
+    "subagent",
+    "amazon-q",
+    "ai",
+    "agent"
+  ],
+  "author": "David Mohl <git@d.sh>",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://github.com/dvcrn/mcp-server-subagent",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dvcrn/mcp-server-subagent.git"
+  },
+  "bugs": "https://github.com/dvcrn/mcp-server-subagent/issues",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.5",
     "uuid": "^11.1.0",

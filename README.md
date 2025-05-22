@@ -8,26 +8,56 @@ The purpose of this MCP is to allow a "planning" agent to delegate tasks to "exe
 
 - Configure and run sub-agents through MCP tools
 - Each sub-agent exposes three tools:
-  - `run_subagent_<name>`: Runs the sub-agent with provided input
-  - `check_subagent_<name>_status`: Checks the status of a previous run
-  - `get_subagent_<name>_logs`: Retrieves the logs of a previous run
+  - `run_subagent_<n>`: Runs the sub-agent with provided input
+  - `check_subagent_<n>_status`: Checks the status of a previous run
+  - `get_subagent_<n>_logs`: Retrieves the logs of a previous run
 - Currently supports the 'q' sub-agent (Amazon Q CLI)
 - Real-time streaming logs for monitoring sub-agent execution
 
 ## Installation
 
+### Global Installation (recommended)
+
 ```bash
+# Install globally using npm
+npm install -g mcp-server-subagent
+
+# Or using npx directly
+npx mcp-server-subagent
+```
+
+### Local Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/dvcrn/mcp-server-subagent.git
+cd mcp-server-subagent
+
 # Install dependencies
 npm install
 
 # Build the project
 npm run build
+
+# Run the server
+npm start
 ```
 
 ## Usage
 
 ### Running the Server
 
+If installed globally:
+```bash
+mcp-server-subagent
+```
+
+Using npx:
+```bash
+npx mcp-server-subagent
+```
+
+Local installation:
 ```bash
 npm start
 ```
@@ -42,6 +72,19 @@ npm run build && node build/test.js
 ### Configuring with Amazon Q
 
 Add this to your Amazon Q MCP configuration file (`~/.aws/amazonq/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "subagent": {
+      "command": "npx",
+      "args": ["mcp-server-subagent"]
+    }
+  }
+}
+```
+
+Or if you installed it locally:
 
 ```json
 {
@@ -78,13 +121,13 @@ To add a new sub-agent, modify the `SUBAGENTS` object in `src/index.ts`:
 const SUBAGENTS = {
   q: {
     command: "q",
-    args: ["chat", "{input}", "--trust-all-tools", "--no-interactive"],
+    getArgs: (input: string) => ["chat", input, "--trust-all-tools", "--no-interactive"],
     description: "Run a query through the Amazon Q CLI",
   },
   // Add your new sub-agent here
   newagent: {
     command: "your-command",
-    args: ["{input}", "--other-flags"],
+    getArgs: (input: string) => ["{input}", "--other-flags"],
     description: "Description of your new agent",
   },
 };
