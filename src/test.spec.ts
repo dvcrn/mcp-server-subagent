@@ -44,7 +44,7 @@ describe("Subagent MCP Server Functionality", () => {
       name: testSubagentName,
       command: "echo",
       getArgs: (input: string) => [
-        `Simulating ${testSubagentName} with input: ${input}`,
+        `Simulating ${testSubagentName} with full input: ${input}`,
       ],
       description: "Test subagent that just echoes input, added by Vitest",
     };
@@ -52,10 +52,16 @@ describe("Subagent MCP Server Functionality", () => {
     testFailSubagentConfig = {
       name: testFailSubagentName,
       command: "sh",
-      getArgs: (input: string) => [
-        "-c",
-        `echo \\"Error message for ${testFailSubagentName}: ${input}\\" && echo \\"Second error line\\" && exit 1`,
-      ],
+      getArgs: (input: string) => {
+        // Escape single quotes in the input for the shell
+        const escapedInput = input.replace(/'/g, "'\\''");
+        return [
+          "-c",
+          // Use printf for the main message to handle newlines and special characters in 'input'.
+          // Then echo the second line and exit.
+          `printf '%s' 'Error message for ${testFailSubagentName} with full input: ${escapedInput}' && echo 'Second error line' && exit 1`,
+        ];
+      },
       description: "Test subagent that intentionally fails, added by Vitest",
     };
 
@@ -98,6 +104,18 @@ describe("Subagent MCP Server Functionality", () => {
       expect(initialStatus.status).toBe("success");
       expect(initialStatus.summary).toBeNull(); // Or specific initial summary if set
       expect(initialStatus.command).toContain("Hello from Vitest!");
+      expect(initialStatus.command).toContain(
+        "This is a sub-task executed by an automated agent."
+      );
+      expect(initialStatus.command).toContain(
+        `Your unique run ID for this task is: ${runId}`
+      );
+      expect(initialStatus.command).toContain(
+        `You MUST report your final status and results using the MCP tool: update_subagent_${testSubagentName}_status`
+      );
+      expect(initialStatus.command).toContain(
+        "Instructions are the following:"
+      );
     });
 
     it("should update the subagent status with a summary", async () => {
@@ -155,6 +173,14 @@ describe("Subagent MCP Server Functionality", () => {
       expect(logs).toContain("Hello from Vitest!");
       expect(logs).toContain("Status updated to: completed");
       expect(logs).toContain(
+        "This is a sub-task executed by an automated agent."
+      );
+      expect(logs).toContain(`Your unique run ID for this task is: ${runId}`);
+      expect(logs).toContain(
+        `You MUST report your final status and results using the MCP tool: update_subagent_${testSubagentName}_status`
+      );
+      expect(logs).toContain("Instructions are the following:");
+      expect(logs).toContain(
         "Summary: The task was completed successfully by Vitest."
       );
     });
@@ -193,8 +219,19 @@ describe("Subagent MCP Server Functionality", () => {
       expect(status.exitCode).toBe(1);
       expect(status.summary).toBeTypeOf("string");
       expect(status.summary).toContain(
-        "Error message for test_fail_in_vitest: TestFailureInput"
+        "Error message for test_fail_in_vitest with full input:"
       );
+      expect(status.summary).toContain("TestFailureInput");
+      expect(status.summary).toContain(
+        "This is a sub-task executed by an automated agent."
+      );
+      expect(status.summary).toContain(
+        `Your unique run ID for this task is: ${failRunId}`
+      );
+      expect(status.summary).toContain(
+        `You MUST report your final status and results using the MCP tool: update_subagent_${testFailSubagentName}_status`
+      );
+      expect(status.summary).toContain("Instructions are the following:");
       expect(status.summary).toContain("Second error line");
       // Check if it includes the last line indicating exit
       expect(status.summary).toMatch(/Process exited with code 1/);
@@ -217,8 +254,19 @@ describe("Subagent MCP Server Functionality", () => {
 
       expect(logs).toBeTypeOf("string");
       expect(logs).toContain(
-        "Error message for test_fail_in_vitest: TestFailureInput"
+        "Error message for test_fail_in_vitest with full input:"
       );
+      expect(logs).toContain("TestFailureInput");
+      expect(logs).toContain(
+        "This is a sub-task executed by an automated agent."
+      );
+      expect(logs).toContain(
+        `Your unique run ID for this task is: ${failRunId}`
+      );
+      expect(logs).toContain(
+        `You MUST report your final status and results using the MCP tool: update_subagent_${testFailSubagentName}_status`
+      );
+      expect(logs).toContain("Instructions are the following:");
       expect(logs).toContain("Process exited with code 1");
     });
   });

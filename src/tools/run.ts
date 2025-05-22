@@ -20,9 +20,21 @@ export async function runSubagent(
   const logFile = join(logDir, `${subagent.name}-${runId}.log`);
   const metadataFile = join(logDir, `${subagent.name}-${runId}.meta.json`);
 
-  // Get command and arguments using the function
+  // Construct the prompt
+  const toolName = `update_subagent_${subagent.name}_status`;
+  const prompt = `
+This is a sub-task executed by an automated agent.
+Your unique run ID for this task is: ${runId}.
+You MUST report your final status and results using the MCP tool: ${toolName}.
+Ensure all necessary information is included in your update via this tool.
+Instructions are the following:
+---
+`;
+  const fullInput = prompt + input;
+
+  // Get command and arguments using the function with the modified input
   const command = subagent.command;
-  const args = subagent.getArgs(input);
+  const args = subagent.getArgs(fullInput);
 
   // Create log file stream for real-time logging
   const logStream = createWriteStream(logFile, { flags: "a" });
