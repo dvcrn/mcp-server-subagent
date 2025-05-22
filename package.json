@@ -1,0 +1,28 @@
+{
+  "name": "mcp-server-subagent",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "mcp-subagent": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "start": "node build/index.js",
+    "dev": "tsc && node build/index.js",
+    "test": "tsc && node build/test.js"
+  },
+  "keywords": ["mcp", "subagent"],
+  "author": "",
+  "license": "ISC",
+  "description": "MCP server for managing sub-agents",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.5",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.8.3"
+  }
+}

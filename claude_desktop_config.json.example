@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "subagent": {
+      "command": "node",
+      "args": [
+        "/ABSOLUTE/PATH/TO/mcp-server-subagent/build/index.js"
+      ]
+    }
+  }
+}
