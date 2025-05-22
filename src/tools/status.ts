@@ -43,6 +43,12 @@ export async function updateSubagentStatus(
     const logFile = join(logDir, `${name}-${runId}.log`);
     const timestamp = new Date().toISOString();
 
+    // Log received summary argument for debugging
+    console.log(
+      `[${timestamp}] updateSubagentStatus called for ${runId} with status: ${status}, summary argument:`,
+      summary
+    );
+
     try {
       // Read current metadata
       const metadataContent = await fs.readFile(metadataFile, "utf-8");
@@ -52,7 +58,7 @@ export async function updateSubagentStatus(
       const updatedMetadata = {
         ...metadata,
         status,
-        summary: summary || metadata.summary,
+        summary: summary !== undefined ? summary : metadata.summary,
         lastUpdated: timestamp,
       };
 
@@ -72,12 +78,13 @@ export async function updateSubagentStatus(
 
       // Also log the status update to the log file
       try {
-        const logStream = createWriteStream(logFile, { flags: "a" });
-        logStream.write(`[${timestamp}] Status updated to: ${status}\n`);
+        await fs.appendFile(
+          logFile,
+          `[${timestamp}] Status updated to: ${status}\n`
+        );
         if (summary) {
-          logStream.write(`[${timestamp}] Summary: ${summary}\n`);
+          await fs.appendFile(logFile, `[${timestamp}] Summary: ${summary}\n`);
         }
-        logStream.end();
       } catch (error) {
         console.error(
           `Error writing to log file for ${name} run ${runId}:`,

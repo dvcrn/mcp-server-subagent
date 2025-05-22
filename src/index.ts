@@ -30,9 +30,9 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
     command: "q",
     getArgs: (input: string) => [
       "chat",
-      input,
       "--trust-all-tools",
       "--no-interactive",
+      input,
     ],
     description: "Run a query through the Amazon Q CLI",
   },
@@ -65,7 +65,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
     tools.push({
       name: `run_subagent_${subagent.name}`,
-      description: `Run the ${subagent.name} subagent with the provided input. ${subagent.description}`,
+      description: `Delegates the given task to a ${subagent.name} subagent as an asynchronous sub-task. This creates a new agent instance that will handle the provided input independently and report back its results. The task can be short or long-running. Use check_subagent_${subagent.name}_status with the returned runId to monitor progress, as completion may take some time.\nSynonyms: Run subtask, run sub-agent, delegate task, delegate sub-task.\n${subagent.description}`,
       inputSchema: {
         type: "object",
         properties: {
@@ -97,7 +97,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     // Add logs retrieval tool for each subagent
     tools.push({
       name: `get_subagent_${subagent.name}_logs`,
-      description: `Get the logs of a ${subagent.name} subagent run`,
+      description: `Get the logs of a ${subagent.name} subagent run. This can be VERY long, so only use this tool if instructed.`,
       inputSchema: {
         type: "object",
         properties: {
@@ -113,7 +113,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     // Add update status tool for each subagent
     tools.push({
       name: `update_subagent_${subagent.name}_status`,
-      description: `Update the status and summary of a ${subagent.name} subagent run`,
+      description: `Update the status and summary of a ${subagent.name} subagent run. This tool is meant to be used from sub-agents, not the main agent.`,
       inputSchema: {
         type: "object",
         properties: {
@@ -171,7 +171,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Subagent ${subagentConfig.name} started with run ID: ${runId}.\n\nUse check_subagent_${subagentConfig.name}_status to check the status.\nUse get_subagent_${subagentConfig.name}_logs to view the logs.`,
+            text: `Subagent ${subagentConfig.name} started with run ID: ${runId}.\n\nUse check_subagent_${subagentConfig.name}_status to check the status. As this task can take a while, periodically check status in 30 second intervals or smilar.`,
           },
         ],
       };

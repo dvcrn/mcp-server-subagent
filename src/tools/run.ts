@@ -87,27 +87,47 @@ Instructions are the following:
     process.on("close", async (code) => {
       const endTime = new Date().toISOString();
       logStream.write(`[${endTime}] Process exited with code ${code}\n`);
-      // Ensure the stream is fully flushed before reading the log file
-      await new Promise((resolve) => logStream.end(resolve));
+      // Ensure the stream is fully flushed before reading/writing metadata
+      await new Promise<void>((resolve) => logStream.end(resolve));
 
-      let summary = null;
+      let currentMetadata;
+      try {
+        const metadataContent = await fs.readFile(metadataFile, "utf-8");
+        currentMetadata = JSON.parse(metadataContent);
+      } catch (readError) {
+        console.error(
+          `Error reading metadata file ${metadataFile} on process close:`,
+          readError
+        );
+        // Fallback to the initial metadata if reading fails.
+        // This ensures critical fields like runId, command, startTime are preserved.
+        currentMetadata = metadata; // 'metadata' is the initial metadata from the outer scope
+      }
+
+      let finalSummary = currentMetadata.summary;
+
       if (code !== 0) {
-        try {
-          const logContent = await fs.readFile(logFile, "utf-8");
-          summary = logContent.split("\n").slice(-50).join("\n");
-        } catch (logError) {
-          console.error(`Error reading log file for summary: ${logError}`);
-          summary = "Error reading log file for summary.";
+        // If the process errored and the subagent didn't set a specific summary,
+        // provide a fallback summary from the log tail.
+        if (!finalSummary) {
+          try {
+            const logContent = await fs.readFile(logFile, "utf-8");
+            finalSummary = logContent.split("\n").slice(-50).join("\n");
+          } catch (logError) {
+            console.error(`Error reading log file for summary: ${logError}`);
+            // If log reading also fails, set a generic error message for the summary.
+            finalSummary = "Error reading log file for summary.";
+          }
         }
       }
 
-      // Update metadata file with completion info
+      // Update metadata file with completion info, using currentMetadata as base
       const updatedMetadata = {
-        ...metadata,
+        ...currentMetadata,
         status: code === 0 ? "success" : "error",
         exitCode: code,
         endTime,
-        summary: summary || metadata.summary, // Use log summary if error, otherwise keep existing or null
+        summary: finalSummary,
       };
 
       await fs.writeFile(
