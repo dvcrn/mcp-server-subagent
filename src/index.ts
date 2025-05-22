@@ -17,7 +17,7 @@ import { createWriteStream } from "fs";
 const LOG_DIR = join(process.cwd(), "logs");
 
 // Define the subagent configuration
-const SUBAGENTS = {
+export const SUBAGENTS = {
   q: {
     command: "q",
     // Use a function to generate arguments to handle complex inputs properly
@@ -29,13 +29,7 @@ const SUBAGENTS = {
     ],
     description: "Run a query through the Amazon Q CLI",
   },
-  test: {
-    command: "echo",
-    getArgs: (input: string) => [
-      `Simulating test subagent with input: ${input}`,
-    ],
-    description: "Test subagent that just echoes input",
-  },
+  // test and test_fail agents will be removed from here and added in tests
 };
 
 // Define Zod schemas for validation
@@ -235,7 +229,19 @@ export async function runSubagent(
     process.on("close", async (code) => {
       const endTime = new Date().toISOString();
       logStream.write(`[${endTime}] Process exited with code ${code}\n`);
-      logStream.end();
+      // Ensure the stream is fully flushed before reading the log file
+      await new Promise((resolve) => logStream.end(resolve));
+
+      let summary = null;
+      if (code !== 0) {
+        try {
+          const logContent = await fs.readFile(logFile, "utf-8");
+          summary = logContent.split("\n").slice(-50).join("\n");
+        } catch (logError) {
+          console.error(`Error reading log file for summary: ${logError}`);
+          summary = "Error reading log file for summary.";
+        }
+      }
 
       // Update metadata file with completion info
       const updatedMetadata = {
@@ -243,6 +249,7 @@ export async function runSubagent(
         status: code === 0 ? "success" : "error",
         exitCode: code,
         endTime,
+        summary: summary || metadata.summary, // Use log summary if error, otherwise keep existing or null
       };
 
       await fs.writeFile(
@@ -257,13 +264,24 @@ export async function runSubagent(
     // Log error and update metadata
     const errorTime = new Date().toISOString();
     logStream.write(`[${errorTime}] Error executing subagent: ${error}\n`);
-    logStream.end();
+    // Ensure the stream is fully flushed before reading the log file
+    await new Promise((resolve) => logStream.end(resolve));
+
+    let summary = null;
+    try {
+      const logContent = await fs.readFile(logFile, "utf-8");
+      summary = logContent.split("\n").slice(-50).join("\n");
+    } catch (logError) {
+      console.error(`Error reading log file for summary: ${logError}`);
+      summary = "Error reading log file for summary.";
+    }
 
     const errorMetadata = {
       ...metadata,
       status: "error",
       error: String(error),
       endTime: errorTime,
+      summary: summary, // Add log summary to metadata
     };
 
     await fs.writeFile(metadataFile, JSON.stringify(errorMetadata, null, 2));
