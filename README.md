@@ -1,6 +1,8 @@
 # MCP Subagent Server
 
-This is a Model Context Protocol (MCP) server that allows configuration and execution of sub-agents through CLI scripts.
+This is a Model Context Protocol (MCP) server that allows dispatching of tasks to sub-agent (like Claude Code, Q or Aider)
+
+The purpose of this MCP is to allow a "planning" agent to delegate tasks to "executor" agents
 
 ## Features
 
@@ -46,9 +48,7 @@ Add this to your Amazon Q MCP configuration file (`~/.aws/amazonq/mcp.json`):
   "mcpServers": {
     "subagent": {
       "command": "node",
-      "args": [
-        "/ABSOLUTE/PATH/TO/mcp-server-subagent/build/index.js"
-      ]
+      "args": ["/ABSOLUTE/PATH/TO/mcp-server-subagent/build/index.js"]
     }
   }
 }
@@ -57,10 +57,12 @@ Add this to your Amazon Q MCP configuration file (`~/.aws/amazonq/mcp.json`):
 ### Available Tools
 
 - `run_subagent_q`: Run a query through the Amazon Q CLI
+
   - Parameters: `input` (string) - The query to send to Amazon Q
   - Returns: A run ID that can be used to check the status or get logs
 
 - `check_subagent_q_status`: Check the status of a previous Amazon Q run
+
   - Parameters: `runId` (string) - The UUID of the run to check
   - Returns: The status and metadata of the run
 
@@ -75,21 +77,22 @@ To add a new sub-agent, modify the `SUBAGENTS` object in `src/index.ts`:
 ```typescript
 const SUBAGENTS = {
   q: {
-    command: 'q',
-    args: ['chat', '{input}', '--trust-all-tools', '--no-interactive'],
-    description: 'Run a query through the Amazon Q CLI'
+    command: "q",
+    args: ["chat", "{input}", "--trust-all-tools", "--no-interactive"],
+    description: "Run a query through the Amazon Q CLI",
   },
   // Add your new sub-agent here
   newagent: {
-    command: 'your-command',
-    args: ['{input}', '--other-flags'],
-    description: 'Description of your new agent'
-  }
+    command: "your-command",
+    args: ["{input}", "--other-flags"],
+    description: "Description of your new agent",
+  },
 };
 ```
 
 ## Logs
 
 All sub-agent runs are logged to the `logs` directory with two files per run:
+
 - `<agent-name>-<run-id>.log`: Contains the real-time output logs
 - `<agent-name>-<run-id>.meta.json`: Contains metadata about the run
