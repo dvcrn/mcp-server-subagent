@@ -284,7 +284,6 @@ async function main() {
     await ensureLogDir();
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Subagent MCP Server running on stdio");
   } catch (error) {
     console.error("Error starting server:", error);
     process.exit(1);
