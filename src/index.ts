@@ -21,8 +21,20 @@ const SUBAGENTS = {
   q: {
     command: "q",
     // Use a function to generate arguments to handle complex inputs properly
-    getArgs: (input: string) => ["chat", input, "--trust-all-tools", "--no-interactive"],
+    getArgs: (input: string) => [
+      "chat",
+      input,
+      "--trust-all-tools",
+      "--no-interactive",
+    ],
     description: "Run a query through the Amazon Q CLI",
+  },
+  test: {
+    command: "echo",
+    getArgs: (input: string) => [
+      `Simulating test subagent with input: ${input}`,
+    ],
+    description: "Test subagent that just echoes input",
   },
 };
 
@@ -39,6 +51,12 @@ const GetSubagentLogsArgumentsSchema = z.object({
   runId: z.string().uuid("Run ID must be a valid UUID"),
 });
 
+const UpdateSubagentStatusArgumentsSchema = z.object({
+  runId: z.string().uuid("Run ID must be a valid UUID"),
+  status: z.enum(["success", "error", "running", "completed"]),
+  summary: z.string().optional(),
+});
+
 // Create server instance
 const server = new Server(
   {
@@ -49,7 +67,7 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
-  },
+  }
 );
 
 // List available tools
@@ -104,13 +122,39 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         required: ["runId"],
       },
     });
+
+    // Add update status tool for each subagent
+    tools.push({
+      name: `update_subagent_${name}_status`,
+      description: `Update the status and summary of a ${name} subagent run`,
+      inputSchema: {
+        type: "object",
+        properties: {
+          runId: {
+            type: "string",
+            description: "Run ID to update status for",
+          },
+          status: {
+            type: "string",
+            enum: ["success", "error", "running", "completed"],
+            description: "New status to set",
+          },
+          summary: {
+            type: "string",
+            description:
+              "Summary or result message to include with the status update",
+          },
+        },
+        required: ["runId", "status"],
+      },
+    });
   }
 
   return { tools };
 });
 
 // Ensure log directory exists
-async function ensureLogDir() {
+export async function ensureLogDir() {
   try {
     await fs.mkdir(LOG_DIR, { recursive: true });
   } catch (error) {
@@ -120,7 +164,10 @@ async function ensureLogDir() {
 }
 
 // Run a subagent and return the run ID
-async function runSubagent(name: string, input: string): Promise<string> {
+export async function runSubagent(
+  name: string,
+  input: string
+): Promise<string> {
   const subagent = SUBAGENTS[name as keyof typeof SUBAGENTS];
   if (!subagent) {
     throw new Error(`Unknown subagent: ${name}`);
@@ -145,6 +192,7 @@ async function runSubagent(name: string, input: string): Promise<string> {
     status: "running",
     exitCode: null,
     endTime: null,
+    summary: null,
   };
 
   await fs.writeFile(metadataFile, JSON.stringify(metadata, null, 2));
@@ -152,7 +200,7 @@ async function runSubagent(name: string, input: string): Promise<string> {
   try {
     // Log the command being executed (for debugging)
     console.error(`Executing: ${command} ${args.join(" ")}`);
-    
+
     // Use spawn instead of exec for better stream handling
     const process = spawn(command, args, {
       stdio: ["ignore", "pipe", "pipe"],
@@ -160,10 +208,10 @@ async function runSubagent(name: string, input: string): Promise<string> {
 
     // Log timestamp at the beginning
     logStream.write(
-      `[${new Date().toISOString()}] Starting ${name} with input: ${input}\n`,
+      `[${new Date().toISOString()}] Starting ${name} with input: ${input}\n`
     );
     logStream.write(
-      `[${new Date().toISOString()}] Command: ${command} ${args.join(" ")}\n`,
+      `[${new Date().toISOString()}] Command: ${command} ${args.join(" ")}\n`
     );
 
     // Stream stdout to log file in real-time
@@ -194,7 +242,7 @@ async function runSubagent(name: string, input: string): Promise<string> {
 
       await fs.writeFile(
         metadataFile,
-        JSON.stringify(updatedMetadata, null, 2),
+        JSON.stringify(updatedMetadata, null, 2)
       );
     });
 
@@ -220,7 +268,10 @@ async function runSubagent(name: string, input: string): Promise<string> {
 }
 
 // Check the status of a subagent run
-async function checkSubagentStatus(name: string, runId: string): Promise<any> {
+export async function checkSubagentStatus(
+  name: string,
+  runId: string
+): Promise<any> {
   try {
     const metadataFile = join(LOG_DIR, `${name}-${runId}.meta.json`);
 
@@ -244,7 +295,10 @@ async function checkSubagentStatus(name: string, runId: string): Promise<any> {
 }
 
 // Get logs for a subagent run
-async function getSubagentLogs(name: string, runId: string): Promise<string> {
+export async function getSubagentLogs(
+  name: string,
+  runId: string
+): Promise<string> {
   try {
     const logFile = join(LOG_DIR, `${name}-${runId}.log`);
 
@@ -258,6 +312,77 @@ async function getSubagentLogs(name: string, runId: string): Promise<string> {
     }
   } catch (error) {
     console.error(`Error getting logs for ${name} run ${runId}:`, error);
+    throw error;
+  }
+}
+
+// Update the status and summary of a subagent run
+export async function updateSubagentStatus(
+  name: string,
+  runId: string,
+  status: string,
+  summary?: string
+): Promise<any> {
+  try {
+    const metadataFile = join(LOG_DIR, `${name}-${runId}.meta.json`);
+    const logFile = join(LOG_DIR, `${name}-${runId}.log`);
+    const timestamp = new Date().toISOString();
+
+    try {
+      // Read current metadata
+      const metadataContent = await fs.readFile(metadataFile, "utf-8");
+      const metadata = JSON.parse(metadataContent);
+
+      // Update metadata with new status and summary
+      const updatedMetadata = {
+        ...metadata,
+        status,
+        summary: summary || metadata.summary,
+        lastUpdated: timestamp,
+      };
+
+      // If status is terminal (success/error/completed), set endTime if not already set
+      if (
+        ["success", "error", "completed"].includes(status) &&
+        !updatedMetadata.endTime
+      ) {
+        updatedMetadata.endTime = timestamp;
+      }
+
+      // Write updated metadata back to file
+      await fs.writeFile(
+        metadataFile,
+        JSON.stringify(updatedMetadata, null, 2)
+      );
+
+      // Also log the status update to the log file
+      try {
+        const logStream = createWriteStream(logFile, { flags: "a" });
+        logStream.write(`[${timestamp}] Status updated to: ${status}\n`);
+        if (summary) {
+          logStream.write(`[${timestamp}] Summary: ${summary}\n`);
+        }
+        logStream.end();
+      } catch (error) {
+        console.error(
+          `Error writing to log file for ${name} run ${runId}:`,
+          error
+        );
+      }
+
+      return updatedMetadata;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return {
+          runId,
+          status: "not_found",
+          message: "Run ID not found",
+        };
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error(`Error updating status for ${name} run ${runId}:`, error);
     throw error;
   }
 }
@@ -298,7 +423,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Status for ${subagentName} run ${runId}:\n\n${JSON.stringify(status, null, 2)}`,
+            text: `Status for ${subagentName} run ${runId}:\n\n${JSON.stringify(
+              status,
+              null,
+              2
+            )}`,
           },
         ],
       };
@@ -323,13 +452,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
+    // Handle update_subagent_*_status tools
+    if (name.startsWith("update_subagent_") && name.endsWith("_status")) {
+      const subagentName = name
+        .replace("update_subagent_", "")
+        .replace("_status", "");
+      const { runId, status, summary } =
+        UpdateSubagentStatusArgumentsSchema.parse(args);
+
+      const updatedStatus = await updateSubagentStatus(
+        subagentName,
+        runId,
+        status,
+        summary
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Status for ${subagentName} run ${runId} updated:\n\n${JSON.stringify(
+              updatedStatus,
+              null,
+              2
+            )}`,
+          },
+        ],
+      };
+    }
+
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) {
     if (error instanceof z.ZodError) {
       throw new Error(
         `Invalid arguments: ${error.errors
           .map((e) => `${e.path.join(".")}: ${e.message}`)
-          .join(", ")}`,
+          .join(", ")}`
       );
     }
     throw error;

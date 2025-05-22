@@ -11,6 +11,7 @@ The purpose of this MCP is to allow a "planning" agent to delegate tasks to "exe
   - `run_subagent_<n>`: Runs the sub-agent with provided input
   - `check_subagent_<n>_status`: Checks the status of a previous run
   - `get_subagent_<n>_logs`: Retrieves the logs of a previous run
+  - `update_subagent_<n>_status`: Updates the status and adds a summary of a previous run
 - Currently supports the 'q' sub-agent (Amazon Q CLI)
 - Real-time streaming logs for monitoring sub-agent execution
 
@@ -112,6 +113,13 @@ Or if you installed it locally:
 - `get_subagent_q_logs`: Get the logs of a previous Amazon Q run
   - Parameters: `runId` (string) - The UUID of the run to get logs for
   - Returns: The complete logs of the run
+
+- `update_subagent_q_status`: Update the status and add a summary of a previous Amazon Q run
+  - Parameters: 
+    - `runId` (string) - The UUID of the run to update
+    - `status` (string) - The new status to set (one of: "success", "error", "running", "completed")
+    - `summary` (string, optional) - A summary or result message to include with the status update
+  - Returns: The updated status and metadata of the run
 
 ## Adding New Sub-agents
 

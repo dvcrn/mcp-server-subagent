@@ -15,7 +15,7 @@
     "prepare": "npm run build",
     "start": "node build/index.js",
     "dev": "tsc && node build/index.js",
-    "test": "tsc && node build/test.js"
+    "test": "vitest run"
   },
   "keywords": [
     "mcp",
@@ -40,6 +40,7 @@
   "devDependencies": {
     "@types/node": "^22.15.21",
     "@types/uuid": "^10.0.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
   }
 }
