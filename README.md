@@ -63,14 +63,7 @@ Local installation:
 npm start
 ```
 
-### Testing
-
-```bash
-# Build and run the test script
-npm run build && node build/test.js
-```
-
-### Configuring with Amazon Q
+### Configuring in your editor 
 
 Add this to your Amazon Q MCP configuration file (`~/.aws/amazonq/mcp.json`):
 
@@ -79,7 +72,7 @@ Add this to your Amazon Q MCP configuration file (`~/.aws/amazonq/mcp.json`):
   "mcpServers": {
     "subagent": {
       "command": "npx",
-      "args": ["mcp-server-subagent"]
+      "args": ["-y", "mcp-server-subagent"]
     }
   }
 }
