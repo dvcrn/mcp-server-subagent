@@ -35,14 +35,20 @@ This MCP server enables a planning agent to delegate tasks to CLI-based executor
 
 ### Git Commit Workflow
 
-1.  **Task Completion:** Once a task is considered complete (including all verifications like passing tests), a Git commit should be considered.
-2.  **Propose Commit:** The assistant (or developer) should propose creating a Git commit.
+1.  **Task Completion:** Once a logical unit of work is considered complete (including all verifications like passing tests), a Git commit should be initiated by the assistant.
+2.  **Propose Commit:** The assistant will propose creating a Git commit for the completed unit of work.
 3.  **If Commit Confirmed:**
-    a.  Run `git status` to identify all changed (modified, new, deleted) files.
-    b.  The user will specify which files to include in the commit. Commonly, this will be all files directly related to the completed task.
-    c.  Stage the specified files using `git add <file1> <file2> ...` or `git add .` if all changes in the working directory are to be staged.
-    d.  The user will provide a concise and descriptive commit message summarizing the changes.
-    e.  Create the commit using `git commit -m "Your descriptive commit message"`.
+    a.  Run `git status` to confirm the changed files.
+    b.  The assistant will identify and propose the set of files related to the completed logical unit of work to be included in the commit. The user will confirm or adjust this set.
+    c.  Stage the specified files using `git add <file1> <file2> ...` or `git add .` if all changes in the working directory are to be staged for this logical unit.
+    d.  The assistant will propose a concise and descriptive commit message adhering to the project's convention (see below). The user will confirm or adjust the message.
+    e.  Create the commit using `git commit -m "Proposed descriptive commit message"`.
+
+#### Commit Message Convention
+*   Start the message with a verb, capitalized, describing the primary action of the commit (e.g., "Add", "Update", "Fix", "Refactor", "Remove").
+*   The message should be phrased so that it completes the sentence: "When this commit is applied, it will <commit message>".
+*   Do not use prefixes like "feat:", "fix:", "chore:", etc.
+*   Keep messages concise but descriptive.
 
 ## 4. Key Conventions
 
