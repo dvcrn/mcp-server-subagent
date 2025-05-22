@@ -1,0 +1,43 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Proactive Reflection and Rule Improvement
+
+**Objective:** To continuously enhance project-specific guidance and AI behavior by reflecting on user interactions and proactively suggesting improvements to `.cursor/rules` or relevant documentation like [CLAUDE.md](mdc:CLAUDE.md).
+
+**Trigger:**
+This process should be initiated before marking any complex or multi-step task as complete, particularly if the task involved:
+*   User feedback or corrections at any stage.
+*   Multiple file modifications.
+*   Generation of complex logic or new architectural components.
+
+**Process:**
+
+1.  **Offer Reflection Opportunity:**
+    *   Ask the user: "Before I complete the task, would you like me to reflect on our interaction and suggest potential improvements to the active `.cursor/rules` or `[CLAUDE.md](mdc:CLAUDE.md)`?"
+
+2.  **Await User Confirmation:**
+    *   If the user declines or does not respond affirmatively, proceed to complete the task without further reflection.
+
+3.  **If User Confirms Reflection:**
+    a.  **Review Interaction History:**
+        *   Analyze the entire conversation history for the current task.
+        *   Synthesize any explicit or implicit feedback, corrections, or preferences stated by the user.
+        *   Identify how this feedback relates to any active `.cursor/rules` or documentation like `[CLAUDE.md](mdc:CLAUDE.md)`.
+        *   Pinpoint areas where existing rules could be clarified, new rules could be beneficial, or documentation could be updated to improve future interactions or task outcomes.
+    b.  **Identify Active Guidance:**
+        *   Note which specific global and workspace `.cursor/rules` files, or documents like `[CLAUDE.md](mdc:CLAUDE.md)`, were relevant or active during the task.
+    c.  **Formulate and Propose Improvements:**
+        *   Generate concrete, actionable suggestions for improving the *content* of the identified rule files or documentation.
+        *   Prioritize suggestions that directly address user feedback or could prevent similar issues/clarifications in the future.
+        *   Present these suggestions to the user in a clear format, ideally as a diff or a proposed `edit_file` changeset, for their review. Do not apply the changes yet.
+    d.  **Await User Decision and Action:**
+        *   Ask the user if they agree with the proposed improvements and if they would like them to be applied.
+        *   If the user approves, use the appropriate tool (e.g., `edit_file`) to apply the changes.
+        *   Once changes are applied (or if the user declines), proceed to complete the original task.
+
+**Constraints:**
+*   Do not offer this reflection process if no `.cursor/rules` or key documentation files like `[CLAUDE.md](mdc:CLAUDE.md)` were actively used or relevant to the task.
+*   Skip this process for very simple, single-step tasks that involved no user feedback or iterations.

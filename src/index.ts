@@ -7,14 +7,20 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { v4 as uuidv4 } from "uuid";
 import { promises as fs } from "fs";
 import { join } from "path";
-import { spawn } from "child_process";
-import { createWriteStream } from "fs";
+import {
+  RunSubagentArgumentsSchema,
+  CheckSubagentStatusArgumentsSchema,
+  GetSubagentLogsArgumentsSchema,
+  UpdateSubagentStatusArgumentsSchema,
+} from "./tools/schemas.js";
+import { runSubagent } from "./tools/run.js";
+import { checkSubagentStatus, updateSubagentStatus } from "./tools/status.js";
+import { getSubagentLogs } from "./tools/logs.js";
 
 // Define the log directory
-const LOG_DIR = join(process.cwd(), "logs");
+export const LOG_DIR = join(process.cwd(), "logs");
 
 // Define the subagent configuration
 export const SUBAGENTS = {
@@ -31,25 +37,6 @@ export const SUBAGENTS = {
   },
   // test and test_fail agents will be removed from here and added in tests
 };
-
-// Define Zod schemas for validation
-const RunSubagentArgumentsSchema = z.object({
-  input: z.string().min(1, "Input cannot be empty"),
-});
-
-const CheckSubagentStatusArgumentsSchema = z.object({
-  runId: z.string().uuid("Run ID must be a valid UUID"),
-});
-
-const GetSubagentLogsArgumentsSchema = z.object({
-  runId: z.string().uuid("Run ID must be a valid UUID"),
-});
-
-const UpdateSubagentStatusArgumentsSchema = z.object({
-  runId: z.string().uuid("Run ID must be a valid UUID"),
-  status: z.enum(["success", "error", "running", "completed"]),
-  summary: z.string().optional(),
-});
 
 // Create server instance
 const server = new Server(
@@ -158,254 +145,6 @@ export async function ensureLogDir() {
     await fs.mkdir(LOG_DIR, { recursive: true });
   } catch (error) {
     console.error("Error creating log directory:", error);
-    throw error;
-  }
-}
-
-// Run a subagent and return the run ID
-export async function runSubagent(
-  name: string,
-  input: string
-): Promise<string> {
-  const subagent = SUBAGENTS[name as keyof typeof SUBAGENTS];
-  if (!subagent) {
-    throw new Error(`Unknown subagent: ${name}`);
-  }
-
-  const runId = uuidv4();
-  const logFile = join(LOG_DIR, `${name}-${runId}.log`);
-  const metadataFile = join(LOG_DIR, `${name}-${runId}.meta.json`);
-
-  // Get command and arguments using the function
-  const command = subagent.command;
-  const args = subagent.getArgs(input);
-
-  // Create log file stream for real-time logging
-  const logStream = createWriteStream(logFile, { flags: "a" });
-
-  // Write initial metadata
-  const metadata = {
-    runId,
-    command: `${command} ${args.join(" ")}`,
-    startTime: new Date().toISOString(),
-    status: "running",
-    exitCode: null,
-    endTime: null,
-    summary: null,
-  };
-
-  await fs.writeFile(metadataFile, JSON.stringify(metadata, null, 2));
-
-  try {
-    // Log the command being executed (for debugging)
-    console.error(`Executing: ${command} ${args.join(" ")}`);
-
-    // Use spawn instead of exec for better stream handling
-    const process = spawn(command, args, {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-
-    // Log timestamp at the beginning
-    logStream.write(
-      `[${new Date().toISOString()}] Starting ${name} with input: ${input}\n`
-    );
-    logStream.write(
-      `[${new Date().toISOString()}] Command: ${command} ${args.join(" ")}\n`
-    );
-
-    // Stream stdout to log file in real-time
-    process.stdout.on("data", (data) => {
-      const timestamp = new Date().toISOString();
-      logStream.write(`[${timestamp}] [stdout] ${data}`);
-    });
-
-    // Stream stderr to log file in real-time
-    process.stderr.on("data", (data) => {
-      const timestamp = new Date().toISOString();
-      logStream.write(`[${timestamp}] [stderr] ${data}`);
-    });
-
-    // Update metadata when process completes
-    process.on("close", async (code) => {
-      const endTime = new Date().toISOString();
-      logStream.write(`[${endTime}] Process exited with code ${code}\n`);
-      // Ensure the stream is fully flushed before reading the log file
-      await new Promise((resolve) => logStream.end(resolve));
-
-      let summary = null;
-      if (code !== 0) {
-        try {
-          const logContent = await fs.readFile(logFile, "utf-8");
-          summary = logContent.split("\n").slice(-50).join("\n");
-        } catch (logError) {
-          console.error(`Error reading log file for summary: ${logError}`);
-          summary = "Error reading log file for summary.";
-        }
-      }
-
-      // Update metadata file with completion info
-      const updatedMetadata = {
-        ...metadata,
-        status: code === 0 ? "success" : "error",
-        exitCode: code,
-        endTime,
-        summary: summary || metadata.summary, // Use log summary if error, otherwise keep existing or null
-      };
-
-      await fs.writeFile(
-        metadataFile,
-        JSON.stringify(updatedMetadata, null, 2)
-      );
-    });
-
-    // Return the run ID immediately
-    return runId;
-  } catch (error) {
-    // Log error and update metadata
-    const errorTime = new Date().toISOString();
-    logStream.write(`[${errorTime}] Error executing subagent: ${error}\n`);
-    // Ensure the stream is fully flushed before reading the log file
-    await new Promise((resolve) => logStream.end(resolve));
-
-    let summary = null;
-    try {
-      const logContent = await fs.readFile(logFile, "utf-8");
-      summary = logContent.split("\n").slice(-50).join("\n");
-    } catch (logError) {
-      console.error(`Error reading log file for summary: ${logError}`);
-      summary = "Error reading log file for summary.";
-    }
-
-    const errorMetadata = {
-      ...metadata,
-      status: "error",
-      error: String(error),
-      endTime: errorTime,
-      summary: summary, // Add log summary to metadata
-    };
-
-    await fs.writeFile(metadataFile, JSON.stringify(errorMetadata, null, 2));
-    console.error(`Error executing subagent ${name}:`, error);
-    throw error;
-  }
-}
-
-// Check the status of a subagent run
-export async function checkSubagentStatus(
-  name: string,
-  runId: string
-): Promise<any> {
-  try {
-    const metadataFile = join(LOG_DIR, `${name}-${runId}.meta.json`);
-
-    try {
-      const metadataContent = await fs.readFile(metadataFile, "utf-8");
-      return JSON.parse(metadataContent);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return {
-          runId,
-          status: "not_found",
-          message: "Run ID not found",
-        };
-      }
-      throw error;
-    }
-  } catch (error) {
-    console.error(`Error checking status for ${name} run ${runId}:`, error);
-    throw error;
-  }
-}
-
-// Get logs for a subagent run
-export async function getSubagentLogs(
-  name: string,
-  runId: string
-): Promise<string> {
-  try {
-    const logFile = join(LOG_DIR, `${name}-${runId}.log`);
-
-    try {
-      return await fs.readFile(logFile, "utf-8");
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return `No logs found for run ID: ${runId}`;
-      }
-      throw error;
-    }
-  } catch (error) {
-    console.error(`Error getting logs for ${name} run ${runId}:`, error);
-    throw error;
-  }
-}
-
-// Update the status and summary of a subagent run
-export async function updateSubagentStatus(
-  name: string,
-  runId: string,
-  status: string,
-  summary?: string
-): Promise<any> {
-  try {
-    const metadataFile = join(LOG_DIR, `${name}-${runId}.meta.json`);
-    const logFile = join(LOG_DIR, `${name}-${runId}.log`);
-    const timestamp = new Date().toISOString();
-
-    try {
-      // Read current metadata
-      const metadataContent = await fs.readFile(metadataFile, "utf-8");
-      const metadata = JSON.parse(metadataContent);
-
-      // Update metadata with new status and summary
-      const updatedMetadata = {
-        ...metadata,
-        status,
-        summary: summary || metadata.summary,
-        lastUpdated: timestamp,
-      };
-
-      // If status is terminal (success/error/completed), set endTime if not already set
-      if (
-        ["success", "error", "completed"].includes(status) &&
-        !updatedMetadata.endTime
-      ) {
-        updatedMetadata.endTime = timestamp;
-      }
-
-      // Write updated metadata back to file
-      await fs.writeFile(
-        metadataFile,
-        JSON.stringify(updatedMetadata, null, 2)
-      );
-
-      // Also log the status update to the log file
-      try {
-        const logStream = createWriteStream(logFile, { flags: "a" });
-        logStream.write(`[${timestamp}] Status updated to: ${status}\n`);
-        if (summary) {
-          logStream.write(`[${timestamp}] Summary: ${summary}\n`);
-        }
-        logStream.end();
-      } catch (error) {
-        console.error(
-          `Error writing to log file for ${name} run ${runId}:`,
-          error
-        );
-      }
-
-      return updatedMetadata;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return {
-          runId,
-          status: "not_found",
-          message: "Run ID not found",
-        };
-      }
-      throw error;
-    }
-  } catch (error) {
-    console.error(`Error updating status for ${name} run ${runId}:`, error);
     throw error;
   }
 }

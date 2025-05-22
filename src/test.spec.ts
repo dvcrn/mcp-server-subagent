@@ -3,12 +3,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   ensureLogDir,
-  runSubagent,
-  checkSubagentStatus,
-  getSubagentLogs,
-  updateSubagentStatus,
   SUBAGENTS, // Import the SUBAGENTS object
 } from "./index.js"; // Assuming functions are exported from index.ts
+import { runSubagent } from "./tools/run.js";
+import { checkSubagentStatus, updateSubagentStatus } from "./tools/status.js";
+import { getSubagentLogs } from "./tools/logs.js";
 import { promises as fs } from "fs";
 import path from "path";
 

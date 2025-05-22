@@ -9,7 +9,7 @@ This MCP server enables a planning agent to delegate tasks to CLI-based executor
 ## 2. Core Architecture & Flow
 
 *   **Technology**: Node.js, TypeScript, `@modelcontextprotocol/sdk`.
-*   **Main Logic**: `src/index.ts` orchestrates sub-agent definitions (production agents in `SUBAGENTS` object, test agents injected dynamically), MCP tool handlers, and core functions for process spawning, logging, and status management.
+*   **Main Logic**: `src/index.ts` orchestrates sub-agent definitions and serves as the main entry point. MCP tool handlers and core functions for process spawning, logging, status management, and their related schemas are now modularized under `src/tools/` (see `src/tools/run.ts`, `src/tools/status.ts`, `src/tools/logs.ts`, and `src/tools/schemas.ts`).
 *   **Execution**: Spawns sub-agents as child processes. Stdout/stderr are logged to timestamped files in `logs/`. A `.meta.json` file per run tracks ID, command, status, times, exit code, and a summary.
 *   **Key MCP Tools Exposed**:
     *   `run_subagent_<name>`: Starts a sub-agent.
