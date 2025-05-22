@@ -1,15 +1,15 @@
 import { promises as fs } from "fs";
 import { join } from "path";
 import { createWriteStream } from "fs";
-import { LOG_DIR } from "../index.js"; // Assuming LOG_DIR will be exported from index.ts
 
 // Check the status of a subagent run
 export async function checkSubagentStatus(
   name: string,
-  runId: string
+  runId: string,
+  logDir: string
 ): Promise<any> {
   try {
-    const metadataFile = join(LOG_DIR, `${name}-${runId}.meta.json`);
+    const metadataFile = join(logDir, `${name}-${runId}.meta.json`);
 
     try {
       const metadataContent = await fs.readFile(metadataFile, "utf-8");
@@ -35,11 +35,12 @@ export async function updateSubagentStatus(
   name: string,
   runId: string,
   status: string,
+  logDir: string,
   summary?: string
 ): Promise<any> {
   try {
-    const metadataFile = join(LOG_DIR, `${name}-${runId}.meta.json`);
-    const logFile = join(LOG_DIR, `${name}-${runId}.log`);
+    const metadataFile = join(logDir, `${name}-${runId}.meta.json`);
+    const logFile = join(logDir, `${name}-${runId}.log`);
     const timestamp = new Date().toISOString();
 
     try {

@@ -3,21 +3,22 @@ import { join } from "path";
 import { spawn } from "child_process";
 import { createWriteStream } from "fs";
 import { v4 as uuidv4 } from "uuid";
-import { SUBAGENTS, LOG_DIR } from "../index.js"; // Assuming LOG_DIR will be exported from index.ts
+import { SubagentConfig } from "./schemas.js"; // Import SubagentConfig
 
 // Run a subagent and return the run ID
 export async function runSubagent(
-  name: string,
-  input: string
+  subagent: SubagentConfig, // Use SubagentConfig type
+  input: string,
+  logDir: string
 ): Promise<string> {
-  const subagent = SUBAGENTS[name as keyof typeof SUBAGENTS];
   if (!subagent) {
-    throw new Error(`Unknown subagent: ${name}`);
+    // This check might be redundant if type guarantees subagent exists
+    throw new Error(`Subagent configuration is missing.`);
   }
 
   const runId = uuidv4();
-  const logFile = join(LOG_DIR, `${name}-${runId}.log`);
-  const metadataFile = join(LOG_DIR, `${name}-${runId}.meta.json`);
+  const logFile = join(logDir, `${subagent.name}-${runId}.log`);
+  const metadataFile = join(logDir, `${subagent.name}-${runId}.meta.json`);
 
   // Get command and arguments using the function
   const command = subagent.command;
@@ -50,7 +51,9 @@ export async function runSubagent(
 
     // Log timestamp at the beginning
     logStream.write(
-      `[${new Date().toISOString()}] Starting ${name} with input: ${input}\n`
+      `[${new Date().toISOString()}] Starting ${
+        subagent.name
+      } with input: ${input}\n`
     );
     logStream.write(
       `[${new Date().toISOString()}] Command: ${command} ${args.join(" ")}\n`
@@ -128,7 +131,7 @@ export async function runSubagent(
     };
 
     await fs.writeFile(metadataFile, JSON.stringify(errorMetadata, null, 2));
-    console.error(`Error executing subagent ${name}:`, error);
+    console.error(`Error executing subagent ${subagent.name}:`, error);
     throw error;
   }
 }

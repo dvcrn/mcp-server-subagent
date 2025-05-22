@@ -14,6 +14,7 @@ import {
   CheckSubagentStatusArgumentsSchema,
   GetSubagentLogsArgumentsSchema,
   UpdateSubagentStatusArgumentsSchema,
+  SubagentConfig,
 } from "./tools/schemas.js";
 import { runSubagent } from "./tools/run.js";
 import { checkSubagentStatus, updateSubagentStatus } from "./tools/status.js";
@@ -23,10 +24,10 @@ import { getSubagentLogs } from "./tools/logs.js";
 export const LOG_DIR = join(process.cwd(), "logs");
 
 // Define the subagent configuration
-export const SUBAGENTS = {
+export const SUBAGENTS: Record<string, SubagentConfig> = {
   q: {
+    name: "q",
     command: "q",
-    // Use a function to generate arguments to handle complex inputs properly
     getArgs: (input: string) => [
       "chat",
       input,
@@ -56,15 +57,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [];
 
   // Add run tools for each subagent
-  for (const [name, config] of Object.entries(SUBAGENTS)) {
+  for (const subagent of Object.values(SUBAGENTS)) {
     // Exclude the 'test' subagent from being exposed
-    if (name === "test") {
+    if (subagent.name === "test") {
       continue;
     }
 
     tools.push({
-      name: `run_subagent_${name}`,
-      description: `Run the ${name} subagent with the provided input`,
+      name: `run_subagent_${subagent.name}`,
+      description: `Run the ${subagent.name} subagent with the provided input. ${subagent.description}`,
       inputSchema: {
         type: "object",
         properties: {
@@ -79,8 +80,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
     // Add status check tool for each subagent
     tools.push({
-      name: `check_subagent_${name}_status`,
-      description: `Check the status of a ${name} subagent run`,
+      name: `check_subagent_${subagent.name}_status`,
+      description: `Check the status of a ${subagent.name} subagent run`,
       inputSchema: {
         type: "object",
         properties: {
@@ -95,8 +96,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
     // Add logs retrieval tool for each subagent
     tools.push({
-      name: `get_subagent_${name}_logs`,
-      description: `Get the logs of a ${name} subagent run`,
+      name: `get_subagent_${subagent.name}_logs`,
+      description: `Get the logs of a ${subagent.name} subagent run`,
       inputSchema: {
         type: "object",
         properties: {
@@ -111,8 +112,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
     // Add update status tool for each subagent
     tools.push({
-      name: `update_subagent_${name}_status`,
-      description: `Update the status and summary of a ${name} subagent run`,
+      name: `update_subagent_${subagent.name}_status`,
+      description: `Update the status and summary of a ${subagent.name} subagent run`,
       inputSchema: {
         type: "object",
         properties: {
@@ -157,16 +158,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Handle run_subagent_* tools
     if (name.startsWith("run_subagent_")) {
       const subagentName = name.replace("run_subagent_", "");
+      const subagentConfig = SUBAGENTS[subagentName];
+      if (!subagentConfig) {
+        throw new Error(`Unknown subagent: ${subagentName}`);
+      }
       const { input } = RunSubagentArgumentsSchema.parse(args);
 
       await ensureLogDir();
-      const runId = await runSubagent(subagentName, input);
+      const runId = await runSubagent(subagentConfig, input, LOG_DIR);
 
       return {
         content: [
           {
             type: "text",
-            text: `Subagent ${subagentName} started with run ID: ${runId}.\n\nUse check_subagent_${subagentName}_status to check the status.\nUse get_subagent_${subagentName}_logs to view the logs.`,
+            text: `Subagent ${subagentConfig.name} started with run ID: ${runId}.\n\nUse check_subagent_${subagentConfig.name}_status to check the status.\nUse get_subagent_${subagentConfig.name}_logs to view the logs.`,
           },
         ],
       };
@@ -177,19 +182,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const subagentName = name
         .replace("check_subagent_", "")
         .replace("_status", "");
+      const subagentConfig = SUBAGENTS[subagentName];
+      if (!subagentConfig) {
+        throw new Error(`Unknown subagent: ${subagentName}`);
+      }
       const { runId } = CheckSubagentStatusArgumentsSchema.parse(args);
 
-      const status = await checkSubagentStatus(subagentName, runId);
+      const status = await checkSubagentStatus(
+        subagentConfig.name,
+        runId,
+        LOG_DIR
+      );
 
       return {
         content: [
           {
             type: "text",
-            text: `Status for ${subagentName} run ${runId}:\n\n${JSON.stringify(
-              status,
-              null,
-              2
-            )}`,
+            text: `Status for ${
+              subagentConfig.name
+            } run ${runId}:\n\n${JSON.stringify(status, null, 2)}`,
           },
         ],
       };
@@ -200,15 +211,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const subagentName = name
         .replace("get_subagent_", "")
         .replace("_logs", "");
+      const subagentConfig = SUBAGENTS[subagentName];
+      if (!subagentConfig) {
+        throw new Error(`Unknown subagent: ${subagentName}`);
+      }
       const { runId } = GetSubagentLogsArgumentsSchema.parse(args);
 
-      const logs = await getSubagentLogs(subagentName, runId);
+      const logs = await getSubagentLogs(subagentConfig.name, runId, LOG_DIR);
 
       return {
         content: [
           {
             type: "text",
-            text: `Logs for ${subagentName} run ${runId}:\n\n${logs}`,
+            text: `Logs for ${subagentConfig.name} run ${runId}:\n\n${logs}`,
           },
         ],
       };
@@ -219,13 +234,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const subagentName = name
         .replace("update_subagent_", "")
         .replace("_status", "");
+      const subagentConfig = SUBAGENTS[subagentName];
+      if (!subagentConfig) {
+        throw new Error(`Unknown subagent: ${subagentName}`);
+      }
       const { runId, status, summary } =
         UpdateSubagentStatusArgumentsSchema.parse(args);
 
       const updatedStatus = await updateSubagentStatus(
-        subagentName,
+        subagentConfig.name,
         runId,
         status,
+        LOG_DIR,
         summary
       );
 
@@ -233,7 +253,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Status for ${subagentName} run ${runId} updated:\n\n${JSON.stringify(
+            text: `Status for ${
+              subagentConfig.name
+            } run ${runId} updated:\n\n${JSON.stringify(
               updatedStatus,
               null,
               2

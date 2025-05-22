@@ -3,11 +3,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   ensureLogDir,
-  SUBAGENTS, // Import the SUBAGENTS object
+  // SUBAGENTS, // No longer needed directly in tests for this pattern
 } from "./index.js"; // Assuming functions are exported from index.ts
 import { runSubagent } from "./tools/run.js";
 import { checkSubagentStatus, updateSubagentStatus } from "./tools/status.js";
 import { getSubagentLogs } from "./tools/logs.js";
+import { SubagentConfig } from "./tools/schemas.js"; // Import SubagentConfig
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -19,11 +20,12 @@ const LOG_DIR = path.join(process.cwd(), "logs");
 
 // Define types for our dynamic subagents if not already defined in index.ts
 // (Assuming SUBAGENTS values have a specific structure)
-interface SubagentConfig {
-  command: string;
-  getArgs: (input: string) => string[];
-  description: string;
-}
+// interface SubagentConfig { // This local interface is no longer needed
+// name: string; // name is part of the imported SubagentConfig
+// command: string;
+// getArgs: (input: string) => string[];
+// description: string;
+// }
 
 describe("Subagent MCP Server Functionality", () => {
   const testSubagentName = "test_in_vitest";
@@ -31,54 +33,64 @@ describe("Subagent MCP Server Functionality", () => {
   let runId: string;
   let failRunId: string;
 
-  // Store original SUBAGENTS to restore later if needed, though Vitest usually isolates modules
-  let originalSubagents: Record<string, SubagentConfig>;
+  // Test subagent configurations
+  let testSubagentConfig: SubagentConfig;
+  let testFailSubagentConfig: SubagentConfig;
 
   beforeAll(async () => {
     await ensureLogDir();
 
-    // Clone the original SUBAGENTS to avoid modifying the imported object directly if it causes issues across test files (though unlikely with Vitest)
-    originalSubagents = { ...SUBAGENTS };
-
-    // Add test-specific subagents
-    (SUBAGENTS as Record<string, SubagentConfig>)[testSubagentName] = {
+    testSubagentConfig = {
+      name: testSubagentName,
       command: "echo",
       getArgs: (input: string) => [
         `Simulating ${testSubagentName} with input: ${input}`,
       ],
       description: "Test subagent that just echoes input, added by Vitest",
     };
-    (SUBAGENTS as Record<string, SubagentConfig>)[testFailSubagentName] = {
+
+    testFailSubagentConfig = {
+      name: testFailSubagentName,
       command: "sh",
       getArgs: (input: string) => [
         "-c",
-        `echo \\"Error message for ${testFailSubagentName}: ${input}\\\" && echo \\"Second error line\\\" && exit 1`,
+        `echo \\"Error message for ${testFailSubagentName}: ${input}\\" && echo \\"Second error line\\" && exit 1`,
       ],
       description: "Test subagent that intentionally fails, added by Vitest",
     };
+
+    // We are no longer modifying the global SUBAGENTS from index.ts for tests
+    // Tests will use their own SubagentConfig instances.
   });
 
   afterAll(async () => {
-    // Restore original SUBAGENTS or simply delete the test-specific ones
-    delete (SUBAGENTS as Record<string, SubagentConfig>)[testSubagentName];
-    delete (SUBAGENTS as Record<string, SubagentConfig>)[testFailSubagentName];
-
-    // Optional: Log cleanup (can be extensive if many tests create files)
-    // Consider a dedicated cleanup script or more robust cleanup logic if needed
+    // No cleanup of global SUBAGENTS needed
   });
 
   describe("Successful Subagent Operations", () => {
     it("should run a subagent and get an initial status", async () => {
-      console.log(`\n--- Running ${testSubagentName} ---`);
-      runId = await runSubagent(testSubagentName, "Hello from Vitest!");
-      console.log(`Subagent ${testSubagentName} started with run ID: ${runId}`);
+      console.log(`\n--- Running ${testSubagentConfig.name} ---`);
+      runId = await runSubagent(
+        testSubagentConfig,
+        "Hello from Vitest!",
+        LOG_DIR
+      );
+      console.log(
+        `Subagent ${testSubagentConfig.name} started with run ID: ${runId}`
+      );
       expect(runId).toBeTypeOf("string");
       expect(runId.length).toBeGreaterThan(0);
 
       await delay(1000);
 
-      console.log(`\n--- Checking initial status for ${testSubagentName} ---`);
-      const initialStatus = await checkSubagentStatus(testSubagentName, runId);
+      console.log(
+        `\n--- Checking initial status for ${testSubagentConfig.name} ---`
+      );
+      const initialStatus = await checkSubagentStatus(
+        testSubagentConfig.name,
+        runId,
+        LOG_DIR
+      );
       console.log("Initial status:", JSON.stringify(initialStatus, null, 2));
 
       expect(initialStatus).toBeDefined();
@@ -92,11 +104,12 @@ describe("Subagent MCP Server Functionality", () => {
       expect(runId, "runId must be set from previous test").toBeDefined();
       const summaryText = "The task was completed successfully by Vitest.";
 
-      console.log(`\n--- Updating status for ${testSubagentName} ---`);
+      console.log(`\n--- Updating status for ${testSubagentConfig.name} ---`);
       const updatedStatus = await updateSubagentStatus(
-        testSubagentName,
+        testSubagentConfig.name,
         runId,
         "completed",
+        LOG_DIR, // Pass LOG_DIR
         summaryText
       );
       console.log("Updated status:", JSON.stringify(updatedStatus, null, 2));
@@ -111,9 +124,13 @@ describe("Subagent MCP Server Functionality", () => {
     it("should reflect the updated status and summary when checking again", async () => {
       expect(runId, "runId must be set from previous test").toBeDefined();
       console.log(
-        `\n--- Checking status after update for ${testSubagentName} ---`
+        `\n--- Checking status after update for ${testSubagentConfig.name} ---`
       );
-      const finalStatus = await checkSubagentStatus(testSubagentName, runId);
+      const finalStatus = await checkSubagentStatus(
+        testSubagentConfig.name,
+        runId,
+        LOG_DIR
+      );
       console.log("Final status:", JSON.stringify(finalStatus, null, 2));
 
       expect(finalStatus).toBeDefined();
@@ -126,8 +143,12 @@ describe("Subagent MCP Server Functionality", () => {
 
     it("should retrieve the logs for the subagent run", async () => {
       expect(runId, "runId must be set from previous test").toBeDefined();
-      console.log(`\n--- Getting logs for ${testSubagentName} ---`);
-      const logs = await getSubagentLogs(testSubagentName, runId);
+      console.log(`\n--- Getting logs for ${testSubagentConfig.name} ---`);
+      const logs = await getSubagentLogs(
+        testSubagentConfig.name,
+        runId,
+        LOG_DIR
+      );
       console.log("Logs:", logs);
 
       expect(logs).toBeTypeOf("string");
@@ -141,19 +162,29 @@ describe("Subagent MCP Server Functionality", () => {
 
   describe("Failing Subagent Operations", () => {
     it('should mark a failing subagent run as "error" and capture log tail in summary', async () => {
-      console.log(`\n--- Running failing subagent ${testFailSubagentName} ---`);
-      failRunId = await runSubagent(testFailSubagentName, "TestFailureInput");
       console.log(
-        `Failing subagent ${testFailSubagentName} started with run ID: ${failRunId}`
+        `\n--- Running failing subagent ${testFailSubagentConfig.name} ---`
+      );
+      failRunId = await runSubagent(
+        testFailSubagentConfig,
+        "TestFailureInput",
+        LOG_DIR
+      );
+      console.log(
+        `Failing subagent ${testFailSubagentConfig.name} started with run ID: ${failRunId}`
       );
       expect(failRunId).toBeTypeOf("string");
 
       await delay(1000); // Wait for the process to exit and metadata to be updated
 
       console.log(
-        `\n--- Checking status for failing subagent ${testFailSubagentName} ---`
+        `\n--- Checking status for failing subagent ${testFailSubagentConfig.name} ---`
       );
-      const status = await checkSubagentStatus(testFailSubagentName, failRunId);
+      const status = await checkSubagentStatus(
+        testFailSubagentConfig.name,
+        failRunId,
+        LOG_DIR
+      );
       console.log("Failing status:", JSON.stringify(status, null, 2));
 
       expect(status).toBeDefined();
@@ -175,9 +206,13 @@ describe("Subagent MCP Server Functionality", () => {
         "failRunId must be set from previous test"
       ).toBeDefined();
       console.log(
-        `\n--- Getting logs for failing subagent ${testFailSubagentName} ---`
+        `\n--- Getting logs for failing subagent ${testFailSubagentConfig.name} ---`
       );
-      const logs = await getSubagentLogs(testFailSubagentName, failRunId);
+      const logs = await getSubagentLogs(
+        testFailSubagentConfig.name,
+        failRunId,
+        LOG_DIR
+      );
       console.log("Failing logs:", logs);
 
       expect(logs).toBeTypeOf("string");

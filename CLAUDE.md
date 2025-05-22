@@ -22,10 +22,27 @@ This MCP server enables a planning agent to delegate tasks to CLI-based executor
 
 *   **Build**: `npm run build` (compiles TypeScript to `build/`).
 *   **Testing**: `npm test` (runs Vitest, `*.spec.ts` files in `src/`).
-    *   Test agents are dynamically added to the `SUBAGENTS` configuration within test files (see `src/test.spec.ts`) to keep production code clean.
-    *   Tests directly call exported functions from `src/index.ts`.
+    *   Test agents (e.g., for echoing or intentional failures) are defined and instantiated directly within test files (e.g., `src/test.spec.ts`) using the `SubagentConfig` interface. This keeps production subagent configurations in `src/index.ts` clean and avoids modifying shared state during tests.
+    *   Tests directly call exported functions from `src/index.ts` (or more commonly, the refactored tool functions from `src/tools/*.ts` directly).
 *   **Local Run**: `npm start` (or `npm run dev` for watch mode).
 *   **Adding Production Sub-agents**: Modify the `SUBAGENTS` object in `src/index.ts`.
+
+### Task Completion & Testing
+
+- **Mandatory Testing:** Before any development task (new feature, refactor, bug fix) is considered complete, all project tests MUST be executed.
+- **Passing State:** The task is only complete if all tests pass. If tests fail, the issues MUST be addressed and tests re-run until they pass.
+- **Test Command:** The standard command for running tests is `npm test`.
+
+### Git Commit Workflow
+
+1.  **Task Completion:** Once a task is considered complete (including all verifications like passing tests), a Git commit should be considered.
+2.  **Propose Commit:** The assistant (or developer) should propose creating a Git commit.
+3.  **If Commit Confirmed:**
+    a.  Run `git status` to identify all changed (modified, new, deleted) files.
+    b.  The user will specify which files to include in the commit. Commonly, this will be all files directly related to the completed task.
+    c.  Stage the specified files using `git add <file1> <file2> ...` or `git add .` if all changes in the working directory are to be staged.
+    d.  The user will provide a concise and descriptive commit message summarizing the changes.
+    e.  Create the commit using `git commit -m "Your descriptive commit message"`.
 
 ## 4. Key Conventions
 

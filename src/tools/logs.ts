@@ -1,14 +1,14 @@
 import { promises as fs } from "fs";
 import { join } from "path";
-import { LOG_DIR } from "../index.js"; // Assuming LOG_DIR will be exported from index.ts
 
 // Get logs for a subagent run
 export async function getSubagentLogs(
   name: string,
-  runId: string
+  runId: string,
+  logDir: string
 ): Promise<string> {
   try {
-    const logFile = join(LOG_DIR, `${name}-${runId}.log`);
+    const logFile = join(logDir, `${name}-${runId}.log`);
 
     try {
       return await fs.readFile(logFile, "utf-8");
