@@ -76,6 +76,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
   // Add run tools for each subagent
   for (const [name, config] of Object.entries(SUBAGENTS)) {
+    // Exclude the 'test' subagent from being exposed
+    if (name === "test") {
+      continue;
+    }
+
     tools.push({
       name: `run_subagent_${name}`,
       description: `Run the ${name} subagent with the provided input`,
