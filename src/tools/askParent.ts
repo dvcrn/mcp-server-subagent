@@ -77,6 +77,6 @@ export async function askParentHandler(
   return {
     messageId,
     instructions:
-      "Poll for the answer using the 'check_message_status' tool with your runId and messageId.",
+      "Poll for the answer using the 'check_message_status' tool with your runId and messageId. Since this could take a while for the parent to respond, use 'sleep 60' between calls to avoid spamming.",
   };
 }

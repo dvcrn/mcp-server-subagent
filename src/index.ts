@@ -355,6 +355,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               `  (Asked at: ${pendingMessage.questionTimestamp})`
             );
             outputParts.push(`  To reply, use the 'reply_subagent' tool.`);
+            outputParts.push(``);
+            outputParts.push(
+              `Note: This may take a while for the parent to respond. Use 'sleep 60' between status checks to avoid spamming.`
+            );
           }
         } else if (
           statusObject.status === "parent_replied" ||
@@ -385,6 +389,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             );
           }
         }
+      }
+
+      // Add general status-specific notes
+      if (statusObject.status === "running") {
+        outputParts.push(``);
+        outputParts.push(
+          `Note: Task is still running. This may take a while. Use 'sleep 60' between status checks to avoid spamming.`
+        );
+      } else if (
+        statusObject.status === "waiting_parent_reply" &&
+        (!Array.isArray(statusObject.messages) ||
+          statusObject.messages.length === 0)
+      ) {
+        outputParts.push(``);
+        outputParts.push(
+          `Note: Waiting for parent reply. This may take a while. Use 'sleep 60' between status checks to avoid spamming.`
+        );
       }
 
       const textOutput = outputParts.join("\n");

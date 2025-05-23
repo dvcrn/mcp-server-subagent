@@ -36,6 +36,9 @@ function formatStatusOutput(statusObject: any, runId: string) {
         outputParts.push(`  ${pendingMessage.questionContent}`);
         outputParts.push(`  (Asked at: ${pendingMessage.questionTimestamp})`);
         outputParts.push(`  To reply, use the 'reply_subagent' tool.`);
+        outputParts.push(
+          `Note: This may take a while for the parent to respond. Use 'sleep 60' between status checks to avoid spamming.`
+        );
       }
     } else if (
       statusObject.status === "parent_replied" ||
@@ -62,6 +65,23 @@ function formatStatusOutput(statusObject: any, runId: string) {
         outputParts.push(`  (Answered at: ${repliedMessage.answerTimestamp})`);
       }
     }
+  }
+
+  // Add general status-specific notes
+  if (statusObject.status === "running") {
+    outputParts.push(``);
+    outputParts.push(
+      `Note: Task is still running. This may take a while. Use 'sleep 60' between status checks to avoid spamming.`
+    );
+  } else if (
+    statusObject.status === "waiting_parent_reply" &&
+    (!Array.isArray(statusObject.messages) ||
+      statusObject.messages.length === 0)
+  ) {
+    outputParts.push(``);
+    outputParts.push(
+      `Note: Waiting for parent reply. This may take a while. Use 'sleep 60' between status checks to avoid spamming.`
+    );
   }
 
   return outputParts.join("\n");
@@ -172,6 +192,9 @@ describe("MCP status handler output formatting", () => {
       expect(output).toContain("  Should I proceed with the task?");
       expect(output).toContain("  (Asked at: 2025-01-01T00:02:00.000Z)");
       expect(output).toContain("  To reply, use the 'reply_subagent' tool.");
+      expect(output).toContain(
+        "Note: This may take a while for the parent to respond. Use 'sleep 60' between status checks to avoid spamming."
+      );
     });
 
     it("should show latest pending question when multiple exist", async () => {
@@ -231,6 +254,9 @@ describe("MCP status handler output formatting", () => {
       expect(output).toContain("  (Asked at: 2025-01-01T00:02:00.000Z)");
       expect(output).toContain("  Answer: Continue with phase 2");
       expect(output).toContain("  (Answered at: 2025-01-01T00:03:00.000Z)");
+      expect(output).toContain(
+        "Note: Task is still running. This may take a while. Use 'sleep 60' between status checks to avoid spamming."
+      );
     });
 
     it("should handle parent_replied status with answered message", async () => {
@@ -298,6 +324,9 @@ describe("MCP status handler output formatting", () => {
       expect(output).toContain("  Question: Latest question?");
       expect(output).toContain("  Answer: Latest answer");
       expect(output).not.toContain("First question?");
+      expect(output).toContain(
+        "Note: Task is still running. This may take a while. Use 'sleep 60' between status checks to avoid spamming."
+      );
     });
 
     it("should not show interaction section when no messages exist", async () => {
@@ -315,6 +344,9 @@ describe("MCP status handler output formatting", () => {
       expect(output).not.toContain("Question awaiting reply");
       expect(output).not.toContain("Last Interaction");
       expect(output).toContain("Status: running");
+      expect(output).toContain(
+        "Note: Task is still running. This may take a while. Use 'sleep 60' between status checks to avoid spamming."
+      );
     });
 
     it("should not show interaction section when messages is undefined", async () => {
@@ -332,6 +364,9 @@ describe("MCP status handler output formatting", () => {
       expect(output).not.toContain("Question awaiting reply");
       expect(output).not.toContain("Last Interaction");
       expect(output).toContain("Status: running");
+      expect(output).toContain(
+        "Note: Task is still running. This may take a while. Use 'sleep 60' between status checks to avoid spamming."
+      );
     });
   });
 
