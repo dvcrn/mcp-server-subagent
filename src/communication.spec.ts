@@ -11,15 +11,15 @@ import { checkMessageStatusHandler } from "./tools/checkMessage.js";
 describe("Bi-directional Communication", () => {
   let testRunId: string;
   let testMetaPath: string;
-  let testRunsDir: string;
+  let testLogsDir: string;
 
   beforeEach(async () => {
     testRunId = uuidv4();
-    testRunsDir = join("runs", testRunId);
-    testMetaPath = join(testRunsDir, ".meta.json");
+    testLogsDir = "logs";
+    testMetaPath = join(testLogsDir, `${testRunId}.meta.json`);
 
-    // Create test runs directory
-    await fs.mkdir(testRunsDir, { recursive: true });
+    // Create test logs directory
+    await fs.mkdir(testLogsDir, { recursive: true });
 
     // Create initial meta file
     const initialMeta = {
@@ -37,7 +37,7 @@ describe("Bi-directional Communication", () => {
   afterEach(async () => {
     // Clean up test files
     try {
-      await fs.rm(testRunsDir, { recursive: true, force: true });
+      await fs.unlink(testMetaPath);
     } catch (error) {
       // Ignore cleanup errors
     }

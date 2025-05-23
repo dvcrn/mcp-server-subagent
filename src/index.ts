@@ -176,7 +176,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
         status: {
           type: "string",
-          enum: ["success", "error", "running", "completed"],
+          enum: [
+            "success",
+            "error",
+            "running",
+            "completed",
+            "waiting_parent_reply",
+            "parent_replied",
+          ],
           description: "New status to set",
         },
         summary: {
