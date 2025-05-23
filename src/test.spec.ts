@@ -148,7 +148,6 @@ describe("Subagent MCP Server Functionality", () => {
   });
 
   describe("Failing Subagent Operations", () => {
-
     it("should not overwrite status if already 'success' or 'error' in metadata before process ends", async () => {
       // Custom subagent that just sleeps for a bit
       const customSubagentConfig: SubagentConfig = {

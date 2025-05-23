@@ -1,6 +1,6 @@
 {
   "name": "mcp-server-subagent",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "MCP server for managing sub-agents",
   "type": "module",
   "bin": {
