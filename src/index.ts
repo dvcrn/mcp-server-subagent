@@ -23,6 +23,16 @@ import { getSubagentLogs } from "./tools/logs.js";
 // Define the log directory
 export const LOG_DIR = join(process.cwd(), "logs");
 
+// MCP configuration for Claude CLI
+export const mcpConfig = {
+  mcpServers: {
+    subagent: {
+      command: "npx",
+      args: ["-y", "mcp-server-subagent"],
+    },
+  },
+};
+
 // Define the subagent configuration
 export const SUBAGENTS: Record<string, SubagentConfig> = {
   q: {
@@ -35,6 +45,19 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
       input,
     ],
     description: "Run a query through the Amazon Q CLI",
+  },
+  claude: {
+    name: "claude",
+    command: "claude",
+    getArgs: (input: string) => [
+      "--print",
+      "--allowedTools",
+      "Bash(git*) Edit Write mcp__subagent__update_subagent_claude_status",
+      "--mcp-config",
+      JSON.stringify(mcpConfig),
+      input,
+    ],
+    description: "Run a query through the Claude CLI",
   },
   // test and test_fail agents will be removed from here and added in tests
 };
