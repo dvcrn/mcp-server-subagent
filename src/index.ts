@@ -75,6 +75,8 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
     getArgs: () => [
       "--print",
       "--verbose",
+      "--output-format",
+      "stream-json",
       "--allowedTools",
       "Bash(git*),Bash,Edit,Write,mcp__subagent__update_subagent_status,mcp__subagent__ask_parent,mcp__subagent__check_message_status",
       "--mcp-config",
