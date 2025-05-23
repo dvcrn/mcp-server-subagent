@@ -3,7 +3,7 @@ import { z } from "zod";
 export interface SubagentConfig {
   name: string;
   command: string;
-  getArgs: (input: string) => string[];
+  getArgs: (...args: any[]) => string[];
   description: string;
 }
 

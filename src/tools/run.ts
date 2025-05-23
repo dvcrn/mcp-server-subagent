@@ -13,13 +13,13 @@ export async function runSubagent(
   logDir: string
 ): Promise<string> {
   if (!subagent) {
-    // This check might be redundant if type guarantees subagent exists
     throw new Error(`Subagent configuration is missing.`);
   }
 
   const runId = uuidv4();
   const logFile = join(logDir, `${runId}.log`);
   const metadataFile = join(logDir, `${runId}.meta.json`);
+  const promptFile = join(logDir, `${runId}.prompt.md`);
 
   // Construct the prompt
   const toolName = "update_subagent_status";
@@ -33,9 +33,21 @@ Instructions are the following:
 `;
   const fullInput = prompt + input;
 
-  // Get command and arguments using the function with the modified input
+  // Write prompt to file
+  await fs.writeFile(promptFile, fullInput);
+
+  // Get command and arguments (no input as CLI arg)
   const command = subagent.command;
-  const args = subagent.getArgs(fullInput);
+  const args = subagent.getArgs();
+
+  // Prepare shell pipeline: cat <promptFile> | <command> <args...>
+  const shellCommand = "sh";
+  const shellArgs = [
+    "-c",
+    `cat "${promptFile}" | ${command} ${args
+      .map((a) => `"${a.replace(/"/g, '\\"')}"`)
+      .join(" ")}`,
+  ];
 
   // Create log file stream for real-time logging
   const logStream = createWriteStream(logFile, { flags: "a" });
@@ -44,7 +56,7 @@ Instructions are the following:
   const metadata = {
     runId,
     agentName: subagent.name,
-    command: `${command} ${args.join(" ")}`,
+    command: `cat "${promptFile}" | ${command} ${args.join(" ")}`,
     startTime: new Date().toISOString(),
     status: "running",
     exitCode: null,
@@ -56,10 +68,12 @@ Instructions are the following:
 
   try {
     // Log the command being executed (for debugging)
-    console.error(`Executing: ${command} ${args.join(" ")}`);
+    console.error(
+      `Executing: cat "${promptFile}" | ${command} ${args.join(" ")}`
+    );
 
-    // Use spawn instead of exec for better stream handling
-    const process = spawn(command, args, {
+    // Use spawn for the shell pipeline
+    const process = spawn(shellCommand, shellArgs, {
       stdio: ["ignore", "pipe", "pipe"],
       cwd: cwd,
     });
@@ -71,7 +85,9 @@ Instructions are the following:
       } with input: ${input}\n`
     );
     logStream.write(
-      `[${new Date().toISOString()}] Command: ${command} ${args.join(" ")}\n`
+      `[${new Date().toISOString()}] Command: cat "${promptFile}" | ${command} ${args.join(
+        " "
+      )}\n`
     );
 
     // Stream stdout to log file in real-time
@@ -90,7 +106,6 @@ Instructions are the following:
     process.on("close", async (code) => {
       const endTime = new Date().toISOString();
       logStream.write(`[${endTime}] Process exited with code ${code}\n`);
-      // Ensure the stream is fully flushed before reading/writing metadata
       await new Promise<void>((resolve) => logStream.end(resolve));
 
       let currentMetadata;
@@ -102,29 +117,23 @@ Instructions are the following:
           `Error reading metadata file ${metadataFile} on process close:`,
           readError
         );
-        // Fallback to the initial metadata if reading fails.
-        // This ensures critical fields like runId, command, startTime are preserved.
-        currentMetadata = metadata; // 'metadata' is the initial metadata from the outer scope
+        currentMetadata = metadata;
       }
 
       let finalSummary = currentMetadata.summary;
 
       if (code !== 0) {
-        // If the process errored and the subagent didn't set a specific summary,
-        // provide a fallback summary from the log tail.
         if (!finalSummary) {
           try {
             const logContent = await fs.readFile(logFile, "utf-8");
             finalSummary = logContent.split("\n").slice(-50).join("\n");
           } catch (logError) {
             console.error(`Error reading log file for summary: ${logError}`);
-            // If log reading also fails, set a generic error message for the summary.
             finalSummary = "Error reading log file for summary.";
           }
         }
       }
 
-      // Update metadata file with completion info, using currentMetadata as base
       const updatedMetadata = {
         ...currentMetadata,
         status: code === 0 ? "success" : "error",
@@ -137,15 +146,23 @@ Instructions are the following:
         metadataFile,
         JSON.stringify(updatedMetadata, null, 2)
       );
+
+      // Cleanup prompt file
+      try {
+        await fs.unlink(promptFile);
+      } catch (cleanupErr) {
+        console.error(
+          `Failed to remove prompt file: ${promptFile}`,
+          cleanupErr
+        );
+      }
     });
 
     // Return the run ID immediately
     return runId;
   } catch (error) {
-    // Log error and update metadata
     const errorTime = new Date().toISOString();
     logStream.write(`[${errorTime}] Error executing subagent: ${error}\n`);
-    // Ensure the stream is fully flushed before reading the log file
     await new Promise((resolve) => logStream.end(resolve));
 
     let summary = null;
@@ -162,10 +179,15 @@ Instructions are the following:
       status: "error",
       error: String(error),
       endTime: errorTime,
-      summary: summary, // Add log summary to metadata
+      summary: summary,
     };
 
     await fs.writeFile(metadataFile, JSON.stringify(errorMetadata, null, 2));
+    try {
+      await fs.unlink(promptFile);
+    } catch (cleanupErr) {
+      // ignore
+    }
     console.error(`Error executing subagent ${subagent.name}:`, error);
     throw error;
   }

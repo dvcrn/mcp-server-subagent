@@ -16,6 +16,7 @@ import {
   GetSubagentLogsArgumentsSchema,
   UpdateSubagentStatusArgumentsSchema,
   SubagentConfig,
+  CommunicationMessage,
 } from "./tools/schemas.js";
 import { runSubagent } from "./tools/run.js";
 import { checkSubagentStatus, updateSubagentStatus } from "./tools/status.js";
@@ -60,24 +61,18 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
   q: {
     name: "q",
     command: "q",
-    getArgs: (input: string) => [
-      "chat",
-      "--trust-all-tools",
-      "--no-interactive",
-      input,
-    ],
+    getArgs: () => ["chat", "--trust-all-tools", "--no-interactive"],
     description: "Run a query through the Amazon Q CLI",
   },
   claude: {
     name: "claude",
     command: "claude",
-    getArgs: (input: string) => [
+    getArgs: () => [
       "--print",
       "--allowedTools",
       "Bash(git*) Bash(sleep*) Edit Write mcp__subagent__update_subagent_status",
       "--mcp-config",
       JSON.stringify(mcpConfig),
-      input,
     ],
     description: "Run a query through the Claude CLI",
   },
@@ -250,17 +245,77 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (name === "check_subagent_status") {
       const { runId } = CheckSubagentStatusArgumentsSchema.parse(args);
 
-      const status = await checkSubagentStatus(runId, LOG_DIR);
+      const statusObject = await checkSubagentStatus(runId, LOG_DIR);
+      const meta = statusObject.meta || statusObject;
+      const outputParts = [];
+
+      outputParts.push(`Run ID: ${meta.runId || runId}`);
+      outputParts.push(`Agent Name: ${meta.agentName || "N/A"}`);
+      outputParts.push(`Status: ${meta.status || "N/A"}`);
+      outputParts.push(`Exit Code: ${meta.exitCode ?? "N/A"}`);
+      outputParts.push(`Start Time: ${meta.startTime || "N/A"}`);
+      outputParts.push(`End Time: ${meta.endTime || "N/A"}`);
+      outputParts.push(`Summary: ${meta.summary || "N/A"}`);
+
+      // Bi-directional communication details
+      if (Array.isArray(meta.messages) && meta.messages.length > 0) {
+        if (meta.status === "waiting_parent_reply") {
+          const pendingMessage = meta.messages
+            .slice()
+            .reverse()
+            .find(
+              (m: CommunicationMessage) =>
+                m.messageStatus === "pending_parent_reply"
+            );
+          if (pendingMessage) {
+            outputParts.push(``);
+            outputParts.push(
+              `Question awaiting reply (Message ID: ${pendingMessage.messageId}):`
+            );
+            outputParts.push(`  ${pendingMessage.questionContent}`);
+            outputParts.push(
+              `  (Asked at: ${pendingMessage.questionTimestamp})`
+            );
+            outputParts.push(`  To reply, use the 'reply_subagent' tool.`);
+          }
+        } else if (
+          meta.status === "parent_replied" ||
+          meta.status === "running"
+        ) {
+          // Find the most recent message with an answer and acknowledged_by_subagent status
+          const repliedMessage = meta.messages
+            .slice()
+            .reverse()
+            .find(
+              (m: CommunicationMessage) =>
+                m.answerContent &&
+                (m.messageStatus === "acknowledged_by_subagent" ||
+                  m.messageStatus === "parent_replied")
+            );
+          if (repliedMessage) {
+            outputParts.push(``);
+            outputParts.push(
+              `Last Interaction (Message ID: ${repliedMessage.messageId}):`
+            );
+            outputParts.push(`  Question: ${repliedMessage.questionContent}`);
+            outputParts.push(
+              `  (Asked at: ${repliedMessage.questionTimestamp})`
+            );
+            outputParts.push(`  Answer: ${repliedMessage.answerContent}`);
+            outputParts.push(
+              `  (Answered at: ${repliedMessage.answerTimestamp})`
+            );
+          }
+        }
+      }
+
+      const textOutput = outputParts.join("\n");
 
       return {
         content: [
           {
             type: "text",
-            text: `Status for run ${runId}:\n\n${JSON.stringify(
-              status,
-              null,
-              2
-            )}`,
+            text: textOutput,
           },
         ],
       };
