@@ -20,58 +20,7 @@ The purpose of this MCP is to allow a "planning" agent to delegate tasks to "exe
 
 ## Installation
 
-### Global Installation (recommended)
-
-```bash
-# Install globally using npm
-npm install -g mcp-server-subagent
-
-# Or using npx directly
-npx mcp-server-subagent
-```
-
-### Local Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/dvcrn/mcp-server-subagent.git
-cd mcp-server-subagent
-
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run the server
-npm start
-```
-
-## Usage
-
-### Running the Server
-
-If installed globally:
-
-```bash
-mcp-server-subagent
-```
-
-Using npx:
-
-```bash
-npx mcp-server-subagent
-```
-
-Local installation:
-
-```bash
-npm start
-```
-
-### Configuring in your editor
-
-Add this to your Amazon Q MCP configuration file (`~/.aws/amazonq/mcp.json`):
+Add this to your MCP configuration file (`~/.aws/amazonq/mcp.json`):
 
 ```json
 {
