@@ -24,8 +24,8 @@ import { getSubagentLogs } from "./tools/logs.js";
 // Function to determine the log directory with fallbacks
 function getLogDir(): string {
   const candidates = [
-    join(process.cwd(), "logs"),
     join(homedir(), ".config", "mcp-server-subagent", "logs"),
+    join(process.cwd(), "logs"),
     join(tmpdir(), "mcp-server-subagent", "logs"),
   ];
 
@@ -64,7 +64,7 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
     getArgs: (input: string) => [
       "--print",
       "--allowedTools",
-      "Bash(git*) Edit Write mcp__subagent__update_subagent_claude_status",
+      "Bash(git*) Bash(sleep*) Edit Write mcp__subagent__update_subagent_claude_status",
       "--mcp-config",
       JSON.stringify(mcpConfig),
       input,
@@ -183,8 +183,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Ensure log directory exists with fallback paths
 export async function ensureLogDir() {
   const candidates = [
-    join(process.cwd(), "logs"),
+    // First try: user config directory (consistent across processes)
     join(homedir(), ".config", "mcp-server-subagent", "logs"),
+    // Second try: current working directory
+    join(process.cwd(), "logs"),
+    // Last resort: temp directory
     join(tmpdir(), "mcp-server-subagent", "logs"),
   ];
 

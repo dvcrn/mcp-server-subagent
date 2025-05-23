@@ -10,16 +10,25 @@ export async function checkSubagentStatus(
 ): Promise<any> {
   try {
     const metadataFile = join(logDir, `${name}-${runId}.meta.json`);
+    const logFile = join(logDir, `${name}-${runId}.log`);
 
     try {
       const metadataContent = await fs.readFile(metadataFile, "utf-8");
-      return JSON.parse(metadataContent);
+      const metadata = JSON.parse(metadataContent);
+      
+      // Add log file paths to the response
+      return {
+        ...metadata,
+        logFile,
+        logDirectory: logDir,
+      };
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return {
           runId,
           status: "not_found",
           message: "Run ID not found",
+          logDirectory: logDir,
         };
       }
       throw error;
