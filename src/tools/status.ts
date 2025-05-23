@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import { join } from "path";
 import { createWriteStream } from "fs";
+import type { CommunicationMessage } from "./schemas.js";
 
 // Check the status of a subagent run
 export async function checkSubagentStatus(
@@ -15,8 +16,47 @@ export async function checkSubagentStatus(
     try {
       const metadataContent = await fs.readFile(metadataFile, "utf-8");
       const metadata = JSON.parse(metadataContent);
-      
-      // Add log file paths to the response
+
+      // Enhanced status handling for bi-directional communication
+      const meta = metadata.meta || metadata; // fallback for legacy structure
+
+      if (meta.status === "waiting_parent_reply") {
+        return {
+          ...metadata,
+          messages: meta.messages ?? [],
+          logFile,
+          logDirectory: logDir,
+        };
+      }
+
+      if (meta.status === "parent_replied") {
+        // Update status and acknowledge the latest parent_replied message
+        meta.status = "running";
+        if (Array.isArray(meta.messages)) {
+          // Find the latest message with messageStatus === "parent_replied"
+          const idx = [...meta.messages]
+            .reverse()
+            .findIndex(
+              (msg: CommunicationMessage) =>
+                msg.messageStatus === "parent_replied"
+            );
+          if (idx !== -1) {
+            // Reverse index to actual index
+            const actualIdx = meta.messages.length - 1 - idx;
+            meta.messages[actualIdx].messageStatus = "acknowledged_by_subagent";
+          }
+        }
+        // Write back the updated metadata
+        await fs.writeFile(metadataFile, JSON.stringify(metadata, null, 2));
+        return {
+          ...metadata,
+          messages: meta.messages ?? [],
+          logFile,
+          logDirectory: logDir,
+        };
+      }
+
+      // Default: preserve existing behavior
       return {
         ...metadata,
         logFile,

@@ -38,6 +38,7 @@ export const CommunicationMessageSchema = z.object({
     "pending_parent_reply",
     "parent_replied",
     "parent_acknowledged",
+    "acknowledged_by_subagent",
   ]),
 });
 export type CommunicationMessage = z.infer<typeof CommunicationMessageSchema>;
