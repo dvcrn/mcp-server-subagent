@@ -25,3 +25,37 @@ export const UpdateSubagentStatusArgumentsSchema = z.object({
   status: z.enum(["success", "error", "running", "completed"]),
   summary: z.string().optional(),
 });
+
+// CommunicationMessage schema and MetaFileContent schema (bi-directional communication design)
+
+export const CommunicationMessageSchema = z.object({
+  messageId: z.string(),
+  questionContent: z.string(),
+  questionTimestamp: z.string(),
+  answerContent: z.string().optional(),
+  answerTimestamp: z.string().optional(),
+  messageStatus: z.enum([
+    "pending_parent_reply",
+    "parent_replied",
+    "parent_acknowledged",
+  ]),
+});
+export type CommunicationMessage = z.infer<typeof CommunicationMessageSchema>;
+
+export const MetaFileContentSchema = z.object({
+  // ...other fields as per existing schema, add as needed
+  meta: z.object({
+    status: z.enum([
+      "pending",
+      "running",
+      "completed",
+      "error",
+      "waiting_parent_reply",
+      "parent_replied",
+    ]),
+    // ...other meta fields as per existing schema
+    messages: z.array(CommunicationMessageSchema).optional(),
+  }),
+  // ...other fields as per existing schema
+});
+export type MetaFileContent = z.infer<typeof MetaFileContentSchema>;
