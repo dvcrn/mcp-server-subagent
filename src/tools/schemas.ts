@@ -61,7 +61,7 @@ export const MetaFileContentSchema = z.object({
   // Other standard metadata fields
   command: z.string().optional(),
   startTime: z.string().optional(),
-  endTime: z.string().optional(),
+  endTime: z.string().nullable().optional(),
   exitCode: z.number().nullable().optional(),
   summary: z.string().nullable().optional(),
   lastUpdated: z.string().optional(),
