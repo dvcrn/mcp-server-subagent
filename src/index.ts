@@ -225,7 +225,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Subagent ${subagentConfig.name} started in directory ${cwd} with run ID: ${runId}.\n\nUse check_subagent_${subagentConfig.name}_status to check the status. As this task can take a while, periodically check status in 30 second intervals or similar.`,
+            text: `Subagent ${subagentConfig.name} started in directory ${cwd} with run ID: ${runId}.\n\nUse check_subagent_${subagentConfig.name}_status to check the status. As this task can take a while, periodically check status in 30 second intervals or similar (use "sleep 30").`,
           },
         ],
       };
