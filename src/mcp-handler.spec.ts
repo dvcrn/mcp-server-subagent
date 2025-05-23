@@ -260,11 +260,11 @@ describe("MCP status handler output formatting", () => {
       await fs.writeJson(metaPath, metadata);
       const statusObject = await checkSubagentStatus(runId, logDir);
 
-      // Note: checkSubagentStatus will auto-acknowledge parent_replied,
-      // so we expect the output to show "running" status
+      // Note: checkSubagentStatus no longer auto-acknowledges parent_replied,
+      // so we expect the output to show "parent_replied" status
       const output = formatStatusOutput(statusObject, runId);
 
-      expect(output).toContain("Status: running");
+      expect(output).toContain("Status: parent_replied");
       expect(output).toContain("Last Interaction (Message ID: msg-789):");
       expect(output).toContain(
         "  Question: Need clarification on requirements"

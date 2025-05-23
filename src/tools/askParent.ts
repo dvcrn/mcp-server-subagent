@@ -56,8 +56,8 @@ export async function askParentHandler(
     messageId,
     questionContent: question,
     questionTimestamp: now,
-    answerContent: "", // Initialize as empty string
-    answerTimestamp: "", // Initialize as empty string
+    answerContent: undefined, // Initialize as undefined
+    answerTimestamp: undefined, // Initialize as undefined
     messageStatus: "pending_parent_reply",
   };
 
@@ -80,6 +80,6 @@ export async function askParentHandler(
   return {
     messageId,
     instructions:
-      "Poll status using 'check_subagent_<agent_name>_status' tool with your runId to check for a reply.",
+      "Poll for the answer using the 'check_message_status' tool with your runId and messageId.",
   };
 }

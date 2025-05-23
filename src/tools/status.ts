@@ -18,34 +18,7 @@ export async function checkSubagentStatus(
       // Enhanced status handling for bi-directional communication
       const meta = metadata.meta || metadata; // fallback for legacy structure
 
-      if (meta.status === "waiting_parent_reply") {
-        return {
-          ...metadata,
-          messages: meta.messages ?? [],
-          logFile,
-          logDirectory: logDir,
-        };
-      }
-
-      if (meta.status === "parent_replied") {
-        // Update status and acknowledge the latest parent_replied message
-        meta.status = "running";
-        if (Array.isArray(meta.messages)) {
-          // Find the latest message with messageStatus === "parent_replied"
-          const idx = [...meta.messages]
-            .reverse()
-            .findIndex(
-              (msg: CommunicationMessage) =>
-                msg.messageStatus === "parent_replied"
-            );
-          if (idx !== -1) {
-            // Reverse index to actual index
-            const actualIdx = meta.messages.length - 1 - idx;
-            meta.messages[actualIdx].messageStatus = "acknowledged_by_subagent";
-          }
-        }
-        // Write back the updated metadata
-        await fs.writeFile(metadataFile, JSON.stringify(metadata, null, 2));
+      if (["waiting_parent_reply", "parent_replied"].includes(meta.status)) {
         return {
           ...metadata,
           messages: meta.messages ?? [],

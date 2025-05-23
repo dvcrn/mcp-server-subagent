@@ -31,6 +31,11 @@ import {
   replySubagentOutputSchema,
   replySubagentHandler,
 } from "./tools/replySubagent.js";
+import {
+  CheckMessageStatusArgumentsSchema,
+  CheckMessageStatusOutputSchema,
+  checkMessageStatusHandler,
+} from "./tools/checkMessage.js";
 
 // Function to determine the log directory with fallbacks
 function getLogDir(): string {
@@ -181,6 +186,70 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       required: ["runId", "status"],
+    },
+  });
+
+  // Add bi-directional communication tools
+  tools.push({
+    name: "ask_parent",
+    description: "Enables the subagent to ask a question to the parent agent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        runId: {
+          type: "string",
+          description: "The subagent's current run ID",
+        },
+        question: {
+          type: "string",
+          description: "The question/message content",
+        },
+      },
+      required: ["runId", "question"],
+    },
+  });
+
+  tools.push({
+    name: "reply_subagent",
+    description:
+      "Enables the parent to reply to a specific question from a subagent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        runId: {
+          type: "string",
+          description: "The subagent's run ID",
+        },
+        messageId: {
+          type: "string",
+          description: "The ID of the message being replied to",
+        },
+        answer: {
+          type: "string",
+          description: "The parent's reply content",
+        },
+      },
+      required: ["runId", "messageId", "answer"],
+    },
+  });
+
+  tools.push({
+    name: "check_message_status",
+    description:
+      "Check the status of a specific message and retrieve the reply if available. This will acknowledge the message if it has been replied to.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        runId: {
+          type: "string",
+          description: "Run ID to check message status for",
+        },
+        messageId: {
+          type: "string",
+          description: "Message ID to check status for",
+        },
+      },
+      required: ["runId", "messageId"],
     },
   });
 
@@ -376,6 +445,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const parsed = replySubagentInputSchema.parse(args);
       const result = await replySubagentHandler(parsed);
       replySubagentOutputSchema.parse(result); // Validate output
+      return { content: [{ type: "json", json: result }] };
+    }
+
+    // Handle check_message_status tool
+    if (name === "check_message_status") {
+      const parsed = CheckMessageStatusArgumentsSchema.parse(args);
+      const result = await checkMessageStatusHandler(parsed);
+      CheckMessageStatusOutputSchema.parse(result); // Validate output
       return { content: [{ type: "json", json: result }] };
     }
 

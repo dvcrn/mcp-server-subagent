@@ -65,7 +65,7 @@ describe("Status handling integration", () => {
       expect(status.logDirectory).toBe(logDir);
     });
 
-    it("should auto-acknowledge parent_replied status and update to running", async () => {
+    it("should return parent_replied status without auto-acknowledgment", async () => {
       const metadata = {
         runId,
         agentName: "test",
@@ -88,15 +88,15 @@ describe("Status handling integration", () => {
       await fs.writeJson(metaPath, metadata);
       const status = await checkSubagentStatus(runId, logDir);
 
-      // Status should be updated to running
-      expect(status.meta.status).toBe("running");
-      expect(status.messages[0].messageStatus).toBe("acknowledged_by_subagent");
+      // Status should remain parent_replied (no auto-acknowledgment)
+      expect(status.meta.status).toBe("parent_replied");
+      expect(status.messages[0].messageStatus).toBe("parent_replied");
 
-      // Verify the file was updated
-      const updatedMetadata = await fs.readJson(metaPath);
-      expect(updatedMetadata.meta.status).toBe("running");
-      expect(updatedMetadata.meta.messages[0].messageStatus).toBe(
-        "acknowledged_by_subagent"
+      // Verify the file was NOT updated
+      const unchangedMetadata = await fs.readJson(metaPath);
+      expect(unchangedMetadata.meta.status).toBe("parent_replied");
+      expect(unchangedMetadata.meta.messages[0].messageStatus).toBe(
+        "parent_replied"
       );
     });
 
@@ -140,7 +140,7 @@ describe("Status handling integration", () => {
       expect(meta.status).toBe("running");
     });
 
-    it("should handle multiple parent_replied messages and acknowledge only the latest", async () => {
+    it("should handle multiple parent_replied messages without acknowledgment", async () => {
       const metadata = {
         runId,
         agentName: "test",
@@ -162,7 +162,7 @@ describe("Status handling integration", () => {
               questionTimestamp: "2025-01-01T00:02:00.000Z",
               answerContent: "Second answer",
               answerTimestamp: "2025-01-01T00:03:00.000Z",
-              messageStatus: "parent_replied", // Should be acknowledged
+              messageStatus: "parent_replied", // Should remain unchanged
             },
           ],
         },
@@ -171,9 +171,9 @@ describe("Status handling integration", () => {
       await fs.writeJson(metaPath, metadata);
       const status = await checkSubagentStatus(runId, logDir);
 
-      expect(status.meta.status).toBe("running");
+      expect(status.meta.status).toBe("parent_replied");
       expect(status.messages[0].messageStatus).toBe("acknowledged_by_subagent"); // Should remain unchanged
-      expect(status.messages[1].messageStatus).toBe("acknowledged_by_subagent"); // Should be updated
+      expect(status.messages[1].messageStatus).toBe("parent_replied"); // Should remain unchanged
     });
 
     it("should handle empty messages array", async () => {
