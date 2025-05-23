@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 import { promises as fs } from "fs";
 import { join } from "path";
+import { homedir, tmpdir } from "os";
 import {
   RunSubagentArgumentsSchema,
   CheckSubagentStatusArgumentsSchema,
@@ -20,8 +21,19 @@ import { runSubagent } from "./tools/run.js";
 import { checkSubagentStatus, updateSubagentStatus } from "./tools/status.js";
 import { getSubagentLogs } from "./tools/logs.js";
 
+// Function to determine the log directory with fallbacks
+function getLogDir(): string {
+  const candidates = [
+    join(process.cwd(), "logs"),
+    join(homedir(), ".config", "mcp-server-subagent", "logs"),
+    join(tmpdir(), "mcp-server-subagent", "logs")
+  ];
+  
+  return candidates[0]; // Start with the first candidate
+}
+
 // Define the log directory
-export const LOG_DIR = join(process.cwd(), "logs");
+export let LOG_DIR = getLogDir();
 
 // MCP configuration for Claude CLI
 export const mcpConfig = {
@@ -163,14 +175,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools };
 });
 
-// Ensure log directory exists
+// Ensure log directory exists with fallback paths
 export async function ensureLogDir() {
-  try {
-    await fs.mkdir(LOG_DIR, { recursive: true });
-  } catch (error) {
-    console.error("Error creating log directory:", error);
-    throw error;
+  const candidates = [
+    join(process.cwd(), "logs"),
+    join(homedir(), ".config", "mcp-server-subagent", "logs"),
+    join(tmpdir(), "mcp-server-subagent", "logs")
+  ];
+  
+  for (const candidate of candidates) {
+    try {
+      await fs.mkdir(candidate, { recursive: true });
+      LOG_DIR = candidate;
+      console.error(`Using log directory: ${LOG_DIR}`);
+      return;
+    } catch (error) {
+      console.error(`Failed to create log directory ${candidate}:`, error);
+    }
   }
+  
+  throw new Error("Unable to create log directory in any of the candidate locations");
 }
 
 // Handle tool execution
