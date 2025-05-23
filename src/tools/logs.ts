@@ -3,12 +3,11 @@ import { join } from "path";
 
 // Get logs for a subagent run
 export async function getSubagentLogs(
-  name: string,
   runId: string,
   logDir: string
 ): Promise<string> {
   try {
-    const logFile = join(logDir, `${name}-${runId}.log`);
+    const logFile = join(logDir, `${runId}.log`);
 
     try {
       return await fs.readFile(logFile, "utf-8");
@@ -19,7 +18,7 @@ export async function getSubagentLogs(
       throw error;
     }
   } catch (error) {
-    console.error(`Error getting logs for ${name} run ${runId}:`, error);
+    console.error(`Error getting logs for run ${runId}:`, error);
     throw error;
   }
 }

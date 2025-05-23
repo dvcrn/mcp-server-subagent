@@ -143,10 +143,10 @@ The existing tool (handler in `src/tools/status.ts`) will be enhanced:
 - [x] Update `MetaFileContent` schema in `src/tools/schemas.ts`
 - [x] Implement `ask_parent` tool in `src/tools/askParent.ts`
 - [x] Implement `reply_subagent` tool in `src/tools/replySubagent.ts`
-- [ ] Extend the `check_subagent_<agent_name>_status` handler in `src/tools/status.ts`
+- [x] Extend the `check_subagent_<agent_name>_status` handler in `src/tools/status.ts`
 - [x] Register new tools in `src/index.ts`
-- [ ] Write unit tests in `src/communication.spec.ts`
-- [ ] Refactor existing tool names to generic forms
+- [x] Write unit tests in `src/communication.spec.ts`
+- [x] Refactor existing tool names to generic forms
 
 ## Refactor Note (Not Part of This Design Doc)
 

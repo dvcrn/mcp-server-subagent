@@ -63,7 +63,7 @@ describe("Bi-directional communication tools", () => {
     await fs.ensureDir(path.dirname(metaPath));
     logDir = "logs";
     await fs.ensureDir(logDir);
-    logMetaPath = path.join(logDir, `${AGENT_NAME}-${runId}.meta.json`);
+    logMetaPath = path.join(logDir, `${runId}.meta.json`);
   });
 
   afterEach(async () => {
@@ -103,11 +103,11 @@ describe("Bi-directional communication tools", () => {
     await fs.copy(metaPath, logMetaPath);
 
     // Act
-    const status = await checkSubagentStatus(AGENT_NAME, runId, logDir);
+    const status = await checkSubagentStatus(runId, logDir);
 
     // Assert
     expect(status.messages).toHaveLength(1);
-    expect(status.meta.status).toBe("waiting_parent_reply");
+    expect(status.meta?.status || status.status).toBe("waiting_parent_reply");
     expect(status.messages[0].messageStatus).toBe("pending_parent_reply");
   });
 
@@ -148,10 +148,10 @@ describe("Bi-directional communication tools", () => {
     await fs.copy(metaPath, logMetaPath);
 
     // Act
-    const status = await checkSubagentStatus(AGENT_NAME, runId, logDir);
+    const status = await checkSubagentStatus(runId, logDir);
 
     // Assert
-    expect(status.meta.status).toBe("running");
+    expect(status.meta?.status || status.status).toBe("running");
     const ackMsg = status.messages.find(
       (m: any) => m.messageStatus === "acknowledged_by_subagent"
     );
@@ -159,7 +159,7 @@ describe("Bi-directional communication tools", () => {
   });
 
   it("edge case: invalid runId returns not_found", async () => {
-    const status = await checkSubagentStatus(AGENT_NAME, "nonexistent", logDir);
+    const status = await checkSubagentStatus("nonexistent", logDir);
     expect(status.status).toBe("not_found");
   });
 

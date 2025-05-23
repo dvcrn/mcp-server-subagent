@@ -3,15 +3,13 @@ import { join } from "path";
 import { createWriteStream } from "fs";
 import type { CommunicationMessage } from "./schemas.js";
 
-// Check the status of a subagent run
 export async function checkSubagentStatus(
-  name: string,
   runId: string,
   logDir: string
 ): Promise<any> {
   try {
-    const metadataFile = join(logDir, `${name}-${runId}.meta.json`);
-    const logFile = join(logDir, `${name}-${runId}.log`);
+    const metadataFile = join(logDir, `${runId}.meta.json`);
+    const logFile = join(logDir, `${runId}.log`);
 
     try {
       const metadataContent = await fs.readFile(metadataFile, "utf-8");
@@ -74,22 +72,20 @@ export async function checkSubagentStatus(
       throw error;
     }
   } catch (error) {
-    console.error(`Error checking status for ${name} run ${runId}:`, error);
+    console.error(`Error checking status for run ${runId}:`, error);
     throw error;
   }
 }
 
-// Update the status and summary of a subagent run
 export async function updateSubagentStatus(
-  name: string,
   runId: string,
   status: string,
   logDir: string,
   summary?: string
 ): Promise<any> {
   try {
-    const metadataFile = join(logDir, `${name}-${runId}.meta.json`);
-    const logFile = join(logDir, `${name}-${runId}.log`);
+    const metadataFile = join(logDir, `${runId}.meta.json`);
+    const logFile = join(logDir, `${runId}.log`);
     const timestamp = new Date().toISOString();
 
     // Log received summary argument for debugging
@@ -135,10 +131,7 @@ export async function updateSubagentStatus(
           await fs.appendFile(logFile, `[${timestamp}] Summary: ${summary}\n`);
         }
       } catch (error) {
-        console.error(
-          `Error writing to log file for ${name} run ${runId}:`,
-          error
-        );
+        console.error(`Error writing to log file for run ${runId}:`, error);
       }
 
       return updatedMetadata;
@@ -153,7 +146,7 @@ export async function updateSubagentStatus(
       throw error;
     }
   } catch (error) {
-    console.error(`Error updating status for ${name} run ${runId}:`, error);
+    console.error(`Error updating status for run ${runId}:`, error);
     throw error;
   }
 }

@@ -93,11 +93,7 @@ describe("Subagent MCP Server Functionality", () => {
       console.log(
         `\n--- Checking initial status for ${testSubagentConfig.name} ---`
       );
-      const initialStatus = await checkSubagentStatus(
-        testSubagentConfig.name,
-        runId,
-        LOG_DIR
-      );
+      const initialStatus = await checkSubagentStatus(runId, LOG_DIR);
       console.log("Initial status:", JSON.stringify(initialStatus, null, 2));
 
       expect(initialStatus).toBeDefined();
@@ -112,7 +108,7 @@ describe("Subagent MCP Server Functionality", () => {
         `Your unique run ID for this task is: ${runId}`
       );
       expect(initialStatus.command).toContain(
-        `You MUST report your final status and results using the MCP tool: update_subagent_${testSubagentName}_status`
+        `You MUST report your final status and results using the MCP tool: update_subagent_status`
       );
       expect(initialStatus.command).toContain(
         "Instructions are the following:"
@@ -125,7 +121,6 @@ describe("Subagent MCP Server Functionality", () => {
 
       console.log(`\n--- Updating status for ${testSubagentConfig.name} ---`);
       const updatedStatus = await updateSubagentStatus(
-        testSubagentConfig.name,
         runId,
         "completed",
         LOG_DIR, // Pass LOG_DIR
@@ -145,11 +140,7 @@ describe("Subagent MCP Server Functionality", () => {
       console.log(
         `\n--- Checking status after update for ${testSubagentConfig.name} ---`
       );
-      const finalStatus = await checkSubagentStatus(
-        testSubagentConfig.name,
-        runId,
-        LOG_DIR
-      );
+      const finalStatus = await checkSubagentStatus(runId, LOG_DIR);
       console.log("Final status:", JSON.stringify(finalStatus, null, 2));
 
       expect(finalStatus).toBeDefined();
@@ -163,11 +154,7 @@ describe("Subagent MCP Server Functionality", () => {
     it("should retrieve the logs for the subagent run", async () => {
       expect(runId, "runId must be set from previous test").toBeDefined();
       console.log(`\n--- Getting logs for ${testSubagentConfig.name} ---`);
-      const logs = await getSubagentLogs(
-        testSubagentConfig.name,
-        runId,
-        LOG_DIR
-      );
+      const logs = await getSubagentLogs(runId, LOG_DIR);
       console.log("Logs:", logs);
 
       expect(logs).toBeTypeOf("string");
@@ -178,7 +165,7 @@ describe("Subagent MCP Server Functionality", () => {
       );
       expect(logs).toContain(`Your unique run ID for this task is: ${runId}`);
       expect(logs).toContain(
-        `You MUST report your final status and results using the MCP tool: update_subagent_${testSubagentName}_status`
+        `You MUST report your final status and results using the MCP tool: update_subagent_status`
       );
       expect(logs).toContain("Instructions are the following:");
       expect(logs).toContain(
@@ -208,11 +195,7 @@ describe("Subagent MCP Server Functionality", () => {
       console.log(
         `\n--- Checking status for failing subagent ${testFailSubagentConfig.name} ---`
       );
-      const status = await checkSubagentStatus(
-        testFailSubagentConfig.name,
-        failRunId,
-        LOG_DIR
-      );
+      const status = await checkSubagentStatus(failRunId, LOG_DIR);
       console.log("Failing status:", JSON.stringify(status, null, 2));
 
       expect(status).toBeDefined();
@@ -231,7 +214,7 @@ describe("Subagent MCP Server Functionality", () => {
         `Your unique run ID for this task is: ${failRunId}`
       );
       expect(status.summary).toContain(
-        `You MUST report your final status and results using the MCP tool: update_subagent_${testFailSubagentName}_status`
+        `You MUST report your final status and results using the MCP tool: update_subagent_status`
       );
       expect(status.summary).toContain("Instructions are the following:");
       expect(status.summary).toContain("Second error line");
@@ -247,11 +230,7 @@ describe("Subagent MCP Server Functionality", () => {
       console.log(
         `\n--- Getting logs for failing subagent ${testFailSubagentConfig.name} ---`
       );
-      const logs = await getSubagentLogs(
-        testFailSubagentConfig.name,
-        failRunId,
-        LOG_DIR
-      );
+      const logs = await getSubagentLogs(failRunId, LOG_DIR);
       console.log("Failing logs:", logs);
 
       expect(logs).toBeTypeOf("string");
@@ -266,7 +245,7 @@ describe("Subagent MCP Server Functionality", () => {
         `Your unique run ID for this task is: ${failRunId}`
       );
       expect(logs).toContain(
-        `You MUST report your final status and results using the MCP tool: update_subagent_${testFailSubagentName}_status`
+        `You MUST report your final status and results using the MCP tool: update_subagent_status`
       );
       expect(logs).toContain("Instructions are the following:");
       expect(logs).toContain("Process exited with code 1");

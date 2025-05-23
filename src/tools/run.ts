@@ -18,11 +18,11 @@ export async function runSubagent(
   }
 
   const runId = uuidv4();
-  const logFile = join(logDir, `${subagent.name}-${runId}.log`);
-  const metadataFile = join(logDir, `${subagent.name}-${runId}.meta.json`);
+  const logFile = join(logDir, `${runId}.log`);
+  const metadataFile = join(logDir, `${runId}.meta.json`);
 
   // Construct the prompt
-  const toolName = `update_subagent_${subagent.name}_status`;
+  const toolName = "update_subagent_status";
   const prompt = `
 This is a sub-task executed by an automated agent.
 Your unique run ID for this task is: ${runId}.
@@ -40,9 +40,10 @@ Instructions are the following:
   // Create log file stream for real-time logging
   const logStream = createWriteStream(logFile, { flags: "a" });
 
-  // Write initial metadata
+  // Write initial metadata, now including agentName
   const metadata = {
     runId,
+    agentName: subagent.name,
     command: `${command} ${args.join(" ")}`,
     startTime: new Date().toISOString(),
     status: "running",
