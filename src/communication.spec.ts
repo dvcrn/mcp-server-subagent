@@ -331,6 +331,70 @@ describe("Bi-directional Communication", () => {
     });
   });
 
+  describe("output format validation", () => {
+    it("should return ask_parent output in the correct MCP tool response format", async () => {
+      // This test validates that the output from ask_parent matches what index.ts expects
+      const question = "What should I do next?";
+
+      const result = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
+
+      // Validate against the schema
+      expect(result).toHaveProperty("messageId");
+      expect(result).toHaveProperty("instructions");
+      expect(typeof result.messageId).toBe("string");
+      expect(typeof result.instructions).toBe("string");
+
+      // Simulate what index.ts does with the result
+      const mcpResponse = {
+        content: [
+          {
+            type: "text",
+            text: `Message ID: ${result.messageId}\n\n${result.instructions}`,
+          },
+        ],
+      };
+
+      // Validate the MCP response structure
+      expect(mcpResponse).toHaveProperty("content");
+      expect(Array.isArray(mcpResponse.content)).toBe(true);
+      expect(mcpResponse.content.length).toBe(1);
+      expect(mcpResponse.content[0]).toHaveProperty("type", "text");
+      expect(mcpResponse.content[0]).toHaveProperty("text");
+      expect(typeof mcpResponse.content[0].text).toBe("string");
+      expect(mcpResponse.content[0].text).toContain("Message ID:");
+      expect(mcpResponse.content[0].text).toContain(result.messageId);
+      expect(mcpResponse.content[0].text).toContain(result.instructions);
+    });
+
+    it("should validate ask_parent output against AskParentOutputSchema", async () => {
+      // Import the schema from askParent.ts
+      const { AskParentOutputSchema } = await import("./tools/askParent.js");
+      
+      const question = "What should I do next?";
+
+      const result = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
+
+      // This should not throw - validates that our handler output matches the schema
+      const validated = AskParentOutputSchema.parse(result);
+      
+      expect(validated).toEqual(result);
+      expect(validated.messageId).toBe(result.messageId);
+      expect(validated.instructions).toBe(result.instructions);
+    });
+  });
+
   describe("end-to-end communication flow", () => {
     it("should handle complete ask -> reply -> check cycle", async () => {
       const question = "Should I continue with the current approach?";

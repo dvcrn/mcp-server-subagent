@@ -74,8 +74,9 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
     command: "claude",
     getArgs: () => [
       "--print",
+      "--verbose",
       "--allowedTools",
-      "Bash(git*) Bash(sleep*) Edit Write mcp__subagent__update_subagent_status mcp__subagent__ask_parent mcp__subagent__check_message_status",
+      "Bash(git*),Bash,Edit,Write,mcp__subagent__update_subagent_status,mcp__subagent__ask_parent,mcp__subagent__check_message_status",
       "--mcp-config",
       JSON.stringify(mcpConfig),
     ],
@@ -468,7 +469,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const parsed = AskParentInputSchema.parse(args);
       const result = await askParentHandler(parsed, LOG_DIR);
       AskParentOutputSchema.parse(result); // Validate output
-      return { content: [{ type: "json", json: result }] };
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Message ID: ${result.messageId}\n\n${result.instructions}`,
+          },
+        ],
+      };
     }
 
     // Handle reply_subagent tool
@@ -476,7 +484,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const parsed = replySubagentInputSchema.parse(args);
       const result = await replySubagentHandler(parsed, LOG_DIR);
       replySubagentOutputSchema.parse(result); // Validate output
-      return { content: [{ type: "json", json: result }] };
+      return {
+        content: [
+          {
+            type: "text",
+            text: result.message,
+          },
+        ],
+      };
     }
 
     // Handle check_message_status tool
@@ -484,7 +499,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const parsed = CheckMessageStatusArgumentsSchema.parse(args);
       const result = await checkMessageStatusHandler(parsed, LOG_DIR);
       CheckMessageStatusOutputSchema.parse(result); // Validate output
-      return { content: [{ type: "json", json: result }] };
+
+      const outputParts = [];
+      outputParts.push(`Message ID: ${result.messageId}`);
+      outputParts.push(`Status: ${result.messageStatus}`);
+      outputParts.push(`Question: ${result.questionContent}`);
+      outputParts.push(`Asked at: ${result.questionTimestamp}`);
+
+      if (result.answerContent) {
+        outputParts.push(`Answer: ${result.answerContent}`);
+        outputParts.push(`Answered at: ${result.answerTimestamp}`);
+      } else {
+        outputParts.push(`Answer: Not yet answered`);
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: outputParts.join("\n"),
+          },
+        ],
+      };
     }
 
     throw new Error(`Unknown tool: ${name}`);
