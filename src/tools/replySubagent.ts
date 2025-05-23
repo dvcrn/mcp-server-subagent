@@ -55,8 +55,13 @@ export const replySubagentHandler = async (
     throw new Error(`Invalid JSON in meta file: ${metaPath}`);
   }
 
+  // Ensure messages array is initialized
+  if (!Array.isArray(meta.messages)) {
+    meta.messages = [];
+  }
+
   // Find the message
-  const msg = meta.messages?.find(
+  const msg = meta.meta.messages?.find(
     (m: CommunicationMessage) => m.messageId === messageId
   );
   if (!msg) {
@@ -76,6 +81,7 @@ export const replySubagentHandler = async (
 
   // Update meta status
   meta.status = "parent_replied";
+  meta.meta.status = "parent_replied";
 
   // Write back to .meta.json
   await fs.writeFile(metaPath, JSON.stringify(meta, null, 2), "utf8");

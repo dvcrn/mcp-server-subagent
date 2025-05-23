@@ -37,8 +37,10 @@
     "zod": "^3.25.20"
   },
   "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.15.21",
     "@types/uuid": "^10.0.0",
+    "fs-extra": "^11.3.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"
   },

@@ -56,13 +56,13 @@ export async function askParentHandler(
     messageId,
     questionContent: question,
     questionTimestamp: now,
-    answerContent: null,
-    answerTimestamp: null,
+    answerContent: "", // Initialize as empty string
+    answerTimestamp: "", // Initialize as empty string
     messageStatus: "pending_parent_reply",
   };
 
-  // Append to messages
-  if (!meta.meta.messages) {
+  // Ensure messages array is initialized
+  if (!Array.isArray(meta.meta.messages)) {
     meta.meta.messages = [];
   }
   meta.meta.messages.push(newMessage);
@@ -71,6 +71,10 @@ export async function askParentHandler(
   meta.meta.status = "waiting_parent_reply";
 
   // Write back
+  console.log(
+    "DEBUG: Writing updated meta file:",
+    JSON.stringify(meta, null, 2)
+  );
   await fs.writeFile(metaPath, JSON.stringify(meta, null, 2));
 
   return {
