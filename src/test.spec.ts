@@ -148,6 +148,56 @@ describe("Subagent MCP Server Functionality", () => {
   });
 
   describe("Failing Subagent Operations", () => {
+
+    it("should not overwrite status if already 'success' or 'error' in metadata before process ends", async () => {
+      // Custom subagent that just sleeps for a bit
+      const customSubagentConfig: SubagentConfig = {
+        name: "test_status_preservation",
+        command: "sh",
+        getArgs: () => ["-c", "sleep 1; echo 'done'"],
+        description: "Subagent for status preservation test",
+      };
+
+      // Start the subagent
+      const runId = await runSubagent(
+        customSubagentConfig,
+        "Preserve status test input",
+        process.cwd(),
+        LOG_DIR
+      );
+      const metaFile = path.join(LOG_DIR, `${runId}.meta.json`);
+
+      // Wait a short moment to ensure the process has started and metadata exists
+      await delay(200);
+
+      // Read and update the metadata to set status to 'success' before process ends
+      let meta = JSON.parse(await fs.readFile(metaFile, "utf-8"));
+      meta.status = "success";
+      await fs.writeFile(metaFile, JSON.stringify(meta, null, 2));
+
+      // Wait for process to finish
+      await delay(1200);
+
+      // Check that status is still 'success' and not overwritten by exit code logic
+      const finalStatus = await checkSubagentStatus(runId, LOG_DIR);
+      expect(finalStatus.status).toBe("success");
+
+      // Repeat for 'error' status
+      const runId2 = await runSubagent(
+        customSubagentConfig,
+        "Preserve error status test input",
+        process.cwd(),
+        LOG_DIR
+      );
+      const metaFile2 = path.join(LOG_DIR, `${runId2}.meta.json`);
+      await delay(200);
+      let meta2 = JSON.parse(await fs.readFile(metaFile2, "utf-8"));
+      meta2.status = "error";
+      await fs.writeFile(metaFile2, JSON.stringify(meta2, null, 2));
+      await delay(1200);
+      const finalStatus2 = await checkSubagentStatus(runId2, LOG_DIR);
+      expect(finalStatus2.status).toBe("error");
+    });
     it('should mark a failing subagent run as "error" and capture log tail in summary', async () => {
       console.log(
         `\n--- Running failing subagent ${testFailSubagentConfig.name} ---`
