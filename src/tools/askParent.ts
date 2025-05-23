@@ -20,10 +20,11 @@ export const AskParentOutputSchema = z.object({
 });
 
 export async function askParentHandler(
-  input: z.infer<typeof AskParentInputSchema>
+  input: z.infer<typeof AskParentInputSchema>,
+  logDir: string
 ) {
   const { runId, question } = input;
-  const metaPath = join("logs", `${runId}.meta.json`);
+  const metaPath = join(logDir, `${runId}.meta.json`);
 
   // Read meta file
   let metaRaw: string;

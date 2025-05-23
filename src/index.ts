@@ -442,7 +442,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Handle ask_parent tool
     if (name === "ask_parent") {
       const parsed = AskParentInputSchema.parse(args);
-      const result = await askParentHandler(parsed);
+      const result = await askParentHandler(parsed, LOG_DIR);
       AskParentOutputSchema.parse(result); // Validate output
       return { content: [{ type: "json", json: result }] };
     }
@@ -450,7 +450,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Handle reply_subagent tool
     if (name === "reply_subagent") {
       const parsed = replySubagentInputSchema.parse(args);
-      const result = await replySubagentHandler(parsed);
+      const result = await replySubagentHandler(parsed, LOG_DIR);
       replySubagentOutputSchema.parse(result); // Validate output
       return { content: [{ type: "json", json: result }] };
     }
@@ -458,7 +458,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Handle check_message_status tool
     if (name === "check_message_status") {
       const parsed = CheckMessageStatusArgumentsSchema.parse(args);
-      const result = await checkMessageStatusHandler(parsed);
+      const result = await checkMessageStatusHandler(parsed, LOG_DIR);
       CheckMessageStatusOutputSchema.parse(result); // Validate output
       return { content: [{ type: "json", json: result }] };
     }

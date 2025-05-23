@@ -47,10 +47,13 @@ describe("Bi-directional Communication", () => {
     it("should create a new message with pending_parent_reply status", async () => {
       const question = "What should I do next?";
 
-      const result = await askParentHandler({
-        runId: testRunId,
-        question,
-      });
+      const result = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
 
       expect(result).toHaveProperty("messageId");
       expect(result.instructions).toContain("check_message_status");
@@ -73,10 +76,13 @@ describe("Bi-directional Communication", () => {
       const invalidRunId = uuidv4();
 
       await expect(
-        askParentHandler({
-          runId: invalidRunId,
-          question: "test question",
-        })
+        askParentHandler(
+          {
+            runId: invalidRunId,
+            question: "test question",
+          },
+          testLogsDir
+        )
       ).rejects.toThrow("Could not read meta file");
     });
   });
@@ -85,18 +91,24 @@ describe("Bi-directional Communication", () => {
     it("should update message with parent reply", async () => {
       // First, ask a question
       const question = "What should I do next?";
-      const askResult = await askParentHandler({
-        runId: testRunId,
-        question,
-      });
+      const askResult = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
 
       // Then reply to it
       const answer = "You should proceed with the next step.";
-      const replyResult = await replySubagentHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-        answer,
-      });
+      const replyResult = await replySubagentHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+          answer,
+        },
+        testLogsDir
+      );
 
       expect(replyResult.success).toBe(true);
       expect(replyResult.message).toContain("Parent reply recorded");
@@ -119,36 +131,48 @@ describe("Bi-directional Communication", () => {
       const invalidMessageId = uuidv4();
 
       await expect(
-        replySubagentHandler({
-          runId: testRunId,
-          messageId: invalidMessageId,
-          answer: "test answer",
-        })
+        replySubagentHandler(
+          {
+            runId: testRunId,
+            messageId: invalidMessageId,
+            answer: "test answer",
+          },
+          testLogsDir
+        )
       ).rejects.toThrow("Message with ID");
     });
 
     it("should handle message not in pending_parent_reply status", async () => {
       // Create a message that's already been replied to
       const question = "What should I do next?";
-      const askResult = await askParentHandler({
-        runId: testRunId,
-        question,
-      });
+      const askResult = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
 
       // Reply once
-      await replySubagentHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-        answer: "First answer",
-      });
+      await replySubagentHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+          answer: "First answer",
+        },
+        testLogsDir
+      );
 
       // Try to reply again
       await expect(
-        replySubagentHandler({
-          runId: testRunId,
-          messageId: askResult.messageId,
-          answer: "Second answer",
-        })
+        replySubagentHandler(
+          {
+            runId: testRunId,
+            messageId: askResult.messageId,
+            answer: "Second answer",
+          },
+          testLogsDir
+        )
       ).rejects.toThrow("Message status is not 'pending_parent_reply'");
     });
   });
@@ -157,16 +181,22 @@ describe("Bi-directional Communication", () => {
     it("should return message details without acknowledgment for pending messages", async () => {
       // Ask a question
       const question = "What should I do next?";
-      const askResult = await askParentHandler({
-        runId: testRunId,
-        question,
-      });
+      const askResult = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
 
       // Check message status before reply
-      const statusResult = await checkMessageStatusHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-      });
+      const statusResult = await checkMessageStatusHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+        },
+        testLogsDir
+      );
 
       expect(statusResult).toMatchObject({
         messageId: askResult.messageId,
@@ -184,24 +214,33 @@ describe("Bi-directional Communication", () => {
     it("should return message details and acknowledge for replied messages", async () => {
       // Ask a question
       const question = "What should I do next?";
-      const askResult = await askParentHandler({
-        runId: testRunId,
-        question,
-      });
+      const askResult = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
 
       // Reply to it
       const answer = "You should proceed with the next step.";
-      await replySubagentHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-        answer,
-      });
+      await replySubagentHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+          answer,
+        },
+        testLogsDir
+      );
 
       // Check message status after reply
-      const statusResult = await checkMessageStatusHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-      });
+      const statusResult = await checkMessageStatusHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+        },
+        testLogsDir
+      );
 
       expect(statusResult).toMatchObject({
         messageId: askResult.messageId,
@@ -223,10 +262,13 @@ describe("Bi-directional Communication", () => {
       const invalidRunId = uuidv4();
 
       await expect(
-        checkMessageStatusHandler({
-          runId: invalidRunId,
-          messageId: uuidv4(),
-        })
+        checkMessageStatusHandler(
+          {
+            runId: invalidRunId,
+            messageId: uuidv4(),
+          },
+          testLogsDir
+        )
       ).rejects.toThrow("Could not read meta file");
     });
 
@@ -234,40 +276,55 @@ describe("Bi-directional Communication", () => {
       const invalidMessageId = uuidv4();
 
       await expect(
-        checkMessageStatusHandler({
-          runId: testRunId,
-          messageId: invalidMessageId,
-        })
+        checkMessageStatusHandler(
+          {
+            runId: testRunId,
+            messageId: invalidMessageId,
+          },
+          testLogsDir
+        )
       ).rejects.toThrow("Message with ID");
     });
 
     it("should not re-acknowledge already acknowledged messages", async () => {
       // Ask a question
       const question = "What should I do next?";
-      const askResult = await askParentHandler({
-        runId: testRunId,
-        question,
-      });
+      const askResult = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
 
       // Reply to it
       const answer = "You should proceed with the next step.";
-      await replySubagentHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-        answer,
-      });
+      await replySubagentHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+          answer,
+        },
+        testLogsDir
+      );
 
       // Check message status (first time - should acknowledge)
-      await checkMessageStatusHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-      });
+      await checkMessageStatusHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+        },
+        testLogsDir
+      );
 
       // Check message status again (should not change anything)
-      const statusResult = await checkMessageStatusHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-      });
+      const statusResult = await checkMessageStatusHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+        },
+        testLogsDir
+      );
 
       expect(statusResult.messageStatus).toBe("acknowledged_by_subagent");
 
@@ -287,28 +344,37 @@ describe("Bi-directional Communication", () => {
       const answer = "Yes, continue with the current approach.";
 
       // 1. Subagent asks a question
-      const askResult = await askParentHandler({
-        runId: testRunId,
-        question,
-      });
+      const askResult = await askParentHandler(
+        {
+          runId: testRunId,
+          question,
+        },
+        testLogsDir
+      );
 
       expect(askResult.messageId).toBeDefined();
       expect(askResult.instructions).toContain("check_message_status");
 
       // 2. Parent replies to the question
-      const replyResult = await replySubagentHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-        answer,
-      });
+      const replyResult = await replySubagentHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+          answer,
+        },
+        testLogsDir
+      );
 
       expect(replyResult.success).toBe(true);
 
       // 3. Subagent checks for the reply
-      const checkResult = await checkMessageStatusHandler({
-        runId: testRunId,
-        messageId: askResult.messageId,
-      });
+      const checkResult = await checkMessageStatusHandler(
+        {
+          runId: testRunId,
+          messageId: askResult.messageId,
+        },
+        testLogsDir
+      );
 
       expect(checkResult).toMatchObject({
         messageId: askResult.messageId,

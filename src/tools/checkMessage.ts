@@ -18,10 +18,11 @@ export const CheckMessageStatusOutputSchema = z.object({
 });
 
 export async function checkMessageStatusHandler(
-  input: z.infer<typeof CheckMessageStatusArgumentsSchema>
+  input: z.infer<typeof CheckMessageStatusArgumentsSchema>,
+  logDir: string
 ): Promise<z.infer<typeof CheckMessageStatusOutputSchema>> {
   const { runId, messageId } = input;
-  const metaPath = join("logs", `${runId}.meta.json`);
+  const metaPath = join(logDir, `${runId}.meta.json`);
 
   // Read meta file
   let metaRaw: string;

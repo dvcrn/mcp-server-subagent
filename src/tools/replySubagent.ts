@@ -35,10 +35,11 @@ export const replySubagentOutputSchema = z.object({
 
 // Handler
 export const replySubagentHandler = async (
-  input: z.infer<typeof replySubagentInputSchema>
+  input: z.infer<typeof replySubagentInputSchema>,
+  logDir: string
 ): Promise<z.infer<typeof replySubagentOutputSchema>> => {
   const { runId, messageId, answer } = input;
-  const metaPath = path.join("logs", `${runId}.meta.json`);
+  const metaPath = path.join(logDir, `${runId}.meta.json`);
 
   // Read and parse .meta.json
   let metaRaw: string;
