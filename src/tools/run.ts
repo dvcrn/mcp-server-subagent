@@ -73,9 +73,14 @@ Instructions are the following:
     );
 
     // Use spawn for the shell pipeline
-    const process = spawn(shellCommand, shellArgs, {
+    const childProcess = spawn(shellCommand, shellArgs, {
       stdio: ["ignore", "pipe", "pipe"],
       cwd: cwd,
+      env: {
+        ...process.env,
+        NO_COLOR: "1",
+        TERM: "dumb",
+      },
     });
 
     // Log timestamp at the beginning
@@ -91,19 +96,19 @@ Instructions are the following:
     );
 
     // Stream stdout to log file in real-time
-    process.stdout.on("data", (data) => {
+    childProcess.stdout.on("data", (data) => {
       const timestamp = new Date().toISOString();
       logStream.write(`[${timestamp}] [stdout] ${data}`);
     });
 
     // Stream stderr to log file in real-time
-    process.stderr.on("data", (data) => {
+    childProcess.stderr.on("data", (data) => {
       const timestamp = new Date().toISOString();
       logStream.write(`[${timestamp}] [stderr] ${data}`);
     });
 
     // Update metadata when process completes
-    process.on("close", async (code) => {
+    childProcess.on("close", async (code) => {
       const endTime = new Date().toISOString();
       logStream.write(`[${endTime}] Process exited with code ${code}\n`);
       await new Promise<void>((resolve) => logStream.end(resolve));
@@ -146,16 +151,6 @@ Instructions are the following:
         metadataFile,
         JSON.stringify(updatedMetadata, null, 2)
       );
-
-      // Cleanup prompt file
-      try {
-        await fs.unlink(promptFile);
-      } catch (cleanupErr) {
-        console.error(
-          `Failed to remove prompt file: ${promptFile}`,
-          cleanupErr
-        );
-      }
     });
 
     // Return the run ID immediately
