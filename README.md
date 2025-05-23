@@ -12,7 +12,7 @@ The purpose of this MCP is to allow a "planning" agent to delegate tasks to "exe
   - `check_subagent_<n>_status`: Checks the status of a previous run
   - `get_subagent_<n>_logs`: Retrieves the logs of a previous run
   - `update_subagent_<n>_status`: Updates the status and adds a summary of a previous run
-- Currently supports the 'q' sub-agent (Amazon Q CLI)
+- Currently supports the 'q' sub-agent (Amazon Q CLI) and 'claude' sub-agent (Claude CLI)
 - Real-time streaming logs for monitoring sub-agent execution
 
 ## Installation
@@ -114,6 +114,27 @@ Or if you installed it locally:
     - `summary` (string, optional) - A summary or result message to include with the status update
   - Returns: The updated status and metadata of the run
 
+- `run_subagent_claude`: Run a query through the Claude CLI
+
+  - Parameters: `input` (string) - The query to send to Claude
+  - Returns: A run ID that can be used to check the status or get logs
+
+- `check_subagent_claude_status`: Check the status of a previous Claude run
+
+  - Parameters: `runId` (string) - The UUID of the run to check
+  - Returns: The status and metadata of the run
+
+- `get_subagent_claude_logs`: Get the logs of a previous Claude run
+  - Parameters: `runId` (string) - The UUID of the run to get logs for
+  - Returns: The complete logs of the run
+
+- `update_subagent_claude_status`: Update the status and add a summary of a previous Claude run
+  - Parameters: 
+    - `runId` (string) - The UUID of the run to update
+    - `status` (string) - The new status to set (one of: "success", "error", "running", "completed")
+    - `summary` (string, optional) - A summary or result message to include with the status update
+  - Returns: The updated status and metadata of the run
+
 ## Adding New Sub-agents
 
 To add a new sub-agent, modify the `SUBAGENTS` object in `src/index.ts`:
@@ -121,14 +142,29 @@ To add a new sub-agent, modify the `SUBAGENTS` object in `src/index.ts`:
 ```typescript
 const SUBAGENTS = {
   q: {
+    name: "q",
     command: "q",
-    getArgs: (input: string) => ["chat", input, "--trust-all-tools", "--no-interactive"],
+    getArgs: (input: string) => ["chat", "--trust-all-tools", "--no-interactive", input],
     description: "Run a query through the Amazon Q CLI",
+  },
+  claude: {
+    name: "claude",
+    command: "claude",
+    getArgs: (input: string) => [
+      "--print",
+      "--allowedTools",
+      "Bash(git*) Edit Write mcp__subagent__update_subagent_claude_status",
+      "--mcp-config",
+      JSON.stringify(mcpConfig),
+      input,
+    ],
+    description: "Run a query through the Claude CLI",
   },
   // Add your new sub-agent here
   newagent: {
+    name: "newagent",
     command: "your-command",
-    getArgs: (input: string) => ["{input}", "--other-flags"],
+    getArgs: (input: string) => ["--some-flag", input, "--other-flags"],
     description: "Description of your new agent",
   },
 };
