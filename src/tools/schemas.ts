@@ -9,6 +9,7 @@ export interface SubagentConfig {
 
 export const RunSubagentArgumentsSchema = z.object({
   input: z.string().min(1, "Input cannot be empty"),
+  cwd: z.string().min(1, "Working directory path cannot be empty"),
 });
 
 export const CheckSubagentStatusArgumentsSchema = z.object({

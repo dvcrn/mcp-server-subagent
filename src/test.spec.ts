@@ -79,6 +79,7 @@ describe("Subagent MCP Server Functionality", () => {
       runId = await runSubagent(
         testSubagentConfig,
         "Hello from Vitest!",
+        process.cwd(),
         LOG_DIR
       );
       console.log(
@@ -194,6 +195,7 @@ describe("Subagent MCP Server Functionality", () => {
       failRunId = await runSubagent(
         testFailSubagentConfig,
         "TestFailureInput",
+        process.cwd(),
         LOG_DIR
       );
       console.log(

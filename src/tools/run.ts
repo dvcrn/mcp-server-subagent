@@ -9,6 +9,7 @@ import { SubagentConfig } from "./schemas.js"; // Import SubagentConfig
 export async function runSubagent(
   subagent: SubagentConfig, // Use SubagentConfig type
   input: string,
+  cwd: string,
   logDir: string
 ): Promise<string> {
   if (!subagent) {
@@ -59,6 +60,7 @@ Instructions are the following:
     // Use spawn instead of exec for better stream handling
     const process = spawn(command, args, {
       stdio: ["ignore", "pipe", "pipe"],
+      cwd: cwd,
     });
 
     // Log timestamp at the beginning

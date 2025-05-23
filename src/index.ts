@@ -26,9 +26,9 @@ function getLogDir(): string {
   const candidates = [
     join(process.cwd(), "logs"),
     join(homedir(), ".config", "mcp-server-subagent", "logs"),
-    join(tmpdir(), "mcp-server-subagent", "logs")
+    join(tmpdir(), "mcp-server-subagent", "logs"),
   ];
-  
+
   return candidates[0]; // Start with the first candidate
 }
 
@@ -108,8 +108,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             type: "string",
             description: "Input to send to the subagent",
           },
+          cwd: {
+            type: "string",
+            description:
+              "Working directory path (project root) where the subagent should be executed. Set this to the current working directory, or the current project root, usually the directory with the .git/ folder.",
+          },
         },
-        required: ["input"],
+        required: ["input", "cwd"],
       },
     });
 
@@ -180,9 +185,9 @@ export async function ensureLogDir() {
   const candidates = [
     join(process.cwd(), "logs"),
     join(homedir(), ".config", "mcp-server-subagent", "logs"),
-    join(tmpdir(), "mcp-server-subagent", "logs")
+    join(tmpdir(), "mcp-server-subagent", "logs"),
   ];
-  
+
   for (const candidate of candidates) {
     try {
       await fs.mkdir(candidate, { recursive: true });
@@ -193,8 +198,10 @@ export async function ensureLogDir() {
       console.error(`Failed to create log directory ${candidate}:`, error);
     }
   }
-  
-  throw new Error("Unable to create log directory in any of the candidate locations");
+
+  throw new Error(
+    "Unable to create log directory in any of the candidate locations"
+  );
 }
 
 // Handle tool execution
@@ -209,16 +216,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (!subagentConfig) {
         throw new Error(`Unknown subagent: ${subagentName}`);
       }
-      const { input } = RunSubagentArgumentsSchema.parse(args);
+      const { input, cwd } = RunSubagentArgumentsSchema.parse(args);
 
       await ensureLogDir();
-      const runId = await runSubagent(subagentConfig, input, LOG_DIR);
+      const runId = await runSubagent(subagentConfig, input, cwd, LOG_DIR);
 
       return {
         content: [
           {
             type: "text",
-            text: `Subagent ${subagentConfig.name} started with run ID: ${runId}.\n\nUse check_subagent_${subagentConfig.name}_status to check the status. As this task can take a while, periodically check status in 30 second intervals or smilar.`,
+            text: `Subagent ${subagentConfig.name} started in directory ${cwd} with run ID: ${runId}.\n\nUse check_subagent_${subagentConfig.name}_status to check the status. As this task can take a while, periodically check status in 30 second intervals or similar.`,
           },
         ],
       };
