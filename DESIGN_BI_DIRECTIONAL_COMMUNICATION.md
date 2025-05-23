@@ -140,9 +140,9 @@ The existing tool (handler in `src/tools/status.ts`) will be enhanced:
 
 ## 7. Implementation Plan
 
-- [ ] Update `MetaFileContent` schema in `src/tools/schemas.ts`
-- [ ] Implement `ask_parent` tool in `src/tools/askParent.ts`
-- [ ] Implement `reply_subagent` tool in `src/tools/replySubagent.ts`
+- [x] Update `MetaFileContent` schema in `src/tools/schemas.ts`
+- [x] Implement `ask_parent` tool in `src/tools/askParent.ts`
+- [x] Implement `reply_subagent` tool in `src/tools/replySubagent.ts`
 - [ ] Extend the `check_subagent_<agent_name>_status` handler in `src/tools/status.ts`
 - [ ] Register new tools in `src/index.ts`
 - [ ] Write unit tests in `src/communication.spec.ts`

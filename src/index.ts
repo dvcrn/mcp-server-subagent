@@ -25,6 +25,11 @@ import {
   AskParentOutputSchema,
   askParentHandler,
 } from "./tools/askParent.js";
+import {
+  replySubagentInputSchema,
+  replySubagentOutputSchema,
+  replySubagentHandler,
+} from "./tools/replySubagent.js";
 
 // Function to determine the log directory with fallbacks
 function getLogDir(): string {
@@ -332,6 +337,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const parsed = AskParentInputSchema.parse(args);
       const result = await askParentHandler(parsed);
       AskParentOutputSchema.parse(result); // Validate output
+      return { content: [{ type: "json", json: result }] };
+    }
+
+    // Handle reply_subagent tool
+    if (name === "reply_subagent") {
+      const parsed = replySubagentInputSchema.parse(args);
+      const result = await replySubagentHandler(parsed);
+      replySubagentOutputSchema.parse(result); // Validate output
       return { content: [{ type: "json", json: result }] };
     }
 
