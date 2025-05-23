@@ -75,7 +75,7 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
     getArgs: () => [
       "--print",
       "--allowedTools",
-      "Bash(git*) Bash(sleep*) Edit Write mcp__subagent__update_subagent_status",
+      "Bash(git*) Bash(sleep*) Edit Write mcp__subagent__update_subagent_status mcp__subagent__ask_parent mcp__subagent__check_message_status",
       "--mcp-config",
       JSON.stringify(mcpConfig),
     ],
@@ -132,7 +132,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   // Add generic status check tool
   tools.push({
     name: "check_subagent_status",
-    description: "Check the status of a subagent run. Requires only the runId.",
+    description:
+      "Check the status of a subagent run. Since sub-agents can take a while it is recommneded to wait at least 30 or 60 seconds (`sleep 30`) in between polling intervals.",
     inputSchema: {
       type: "object",
       properties: {
@@ -357,7 +358,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             outputParts.push(`  To reply, use the 'reply_subagent' tool.`);
             outputParts.push(``);
             outputParts.push(
-              `Note: This may take a while for the parent to respond. Use 'sleep 60' between status checks to avoid spamming.`
+              `Note: This may take a while for the parent to respond. Use 'sleep 30' between status checks to avoid spamming.`
             );
           }
         } else if (
@@ -395,7 +396,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (statusObject.status === "running") {
         outputParts.push(``);
         outputParts.push(
-          `Note: Task is still running. This may take a while. Use 'sleep 60' between status checks to avoid spamming.`
+          `Note: Task is still running. This may take a while. Use 'sleep 30' between status checks to avoid spamming.`
         );
       } else if (
         statusObject.status === "waiting_parent_reply" &&
@@ -404,7 +405,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       ) {
         outputParts.push(``);
         outputParts.push(
-          `Note: Waiting for parent reply. This may take a while. Use 'sleep 60' between status checks to avoid spamming.`
+          `Note: Waiting for parent reply. This may take a while. Use 'sleep 30' between status checks to avoid spamming.`
         );
       }
 
