@@ -28,6 +28,9 @@ This is a sub-task executed by an automated agent.
 Your unique run ID for this task is: ${runId}.
 You MUST report your final status and results using the MCP tool: ${toolName}.
 Ensure all necessary information is included in your update via this tool.
+
+If you are unable to complete the task, please provide a detailed error as summary in the tool call ${toolName} and set the status to 'error'.
+
 Instructions are the following:
 ---
 `;
@@ -139,9 +142,17 @@ Instructions are the following:
         }
       }
 
+      let newStatus = currentMetadata.status;
+      if (
+        currentMetadata.status !== "success" &&
+        currentMetadata.status !== "error"
+      ) {
+        newStatus = code === 0 ? "success" : "error";
+      }
+
       const updatedMetadata = {
         ...currentMetadata,
-        status: code === 0 ? "success" : "error",
+        status: newStatus,
         exitCode: code,
         endTime,
         summary: finalSummary,
