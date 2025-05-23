@@ -44,19 +44,26 @@ export const CommunicationMessageSchema = z.object({
 export type CommunicationMessage = z.infer<typeof CommunicationMessageSchema>;
 
 export const MetaFileContentSchema = z.object({
-  // ...other fields as per existing schema, add as needed
-  meta: z.object({
-    status: z.enum([
+  runId: z.string().optional(),
+  agentName: z.string().optional(),
+  status: z
+    .enum([
       "pending",
       "running",
       "completed",
       "error",
+      "success",
       "waiting_parent_reply",
       "parent_replied",
-    ]),
-    // ...other meta fields as per existing schema
-    messages: z.array(CommunicationMessageSchema).optional(),
-  }),
-  // ...other fields as per existing schema
+    ])
+    .optional(),
+  messages: z.array(CommunicationMessageSchema).optional(),
+  // Other standard metadata fields
+  command: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  exitCode: z.number().nullable().optional(),
+  summary: z.string().nullable().optional(),
+  lastUpdated: z.string().optional(),
 });
 export type MetaFileContent = z.infer<typeof MetaFileContentSchema>;

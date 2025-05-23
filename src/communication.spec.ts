@@ -21,15 +21,12 @@ describe("Bi-directional Communication", () => {
     // Create test logs directory
     await fs.mkdir(testLogsDir, { recursive: true });
 
-    // Create initial meta file
+    // Create initial meta file with flat structure
     const initialMeta = {
       runId: testRunId,
       agentName: "test",
       status: "running",
-      meta: {
-        status: "running",
-        messages: [],
-      },
+      messages: [],
     };
     await fs.writeFile(testMetaPath, JSON.stringify(initialMeta, null, 2));
   });
@@ -62,14 +59,14 @@ describe("Bi-directional Communication", () => {
       const metaContent = await fs.readFile(testMetaPath, "utf-8");
       const meta = JSON.parse(metaContent);
 
-      expect(meta.meta.status).toBe("waiting_parent_reply");
-      expect(meta.meta.messages).toHaveLength(1);
-      expect(meta.meta.messages[0]).toMatchObject({
+      expect(meta.status).toBe("waiting_parent_reply");
+      expect(meta.messages).toHaveLength(1);
+      expect(meta.messages[0]).toMatchObject({
         messageId: result.messageId,
         questionContent: question,
         messageStatus: "pending_parent_reply",
       });
-      expect(meta.meta.messages[0]).toHaveProperty("questionTimestamp");
+      expect(meta.messages[0]).toHaveProperty("questionTimestamp");
     });
 
     it("should handle invalid runId", async () => {
@@ -117,14 +114,14 @@ describe("Bi-directional Communication", () => {
       const metaContent = await fs.readFile(testMetaPath, "utf-8");
       const meta = JSON.parse(metaContent);
 
-      expect(meta.meta.status).toBe("parent_replied");
-      expect(meta.meta.messages[0]).toMatchObject({
+      expect(meta.status).toBe("parent_replied");
+      expect(meta.messages[0]).toMatchObject({
         messageId: askResult.messageId,
         questionContent: question,
         answerContent: answer,
         messageStatus: "parent_replied",
       });
-      expect(meta.meta.messages[0]).toHaveProperty("answerTimestamp");
+      expect(meta.messages[0]).toHaveProperty("answerTimestamp");
     });
 
     it("should handle invalid messageId", async () => {
@@ -208,7 +205,7 @@ describe("Bi-directional Communication", () => {
       // Verify meta file status unchanged
       const metaContent = await fs.readFile(testMetaPath, "utf-8");
       const meta = JSON.parse(metaContent);
-      expect(meta.meta.status).toBe("waiting_parent_reply");
+      expect(meta.status).toBe("waiting_parent_reply");
     });
 
     it("should return message details and acknowledge for replied messages", async () => {
@@ -252,10 +249,8 @@ describe("Bi-directional Communication", () => {
       // Verify meta file was updated to acknowledged and running
       const metaContent = await fs.readFile(testMetaPath, "utf-8");
       const meta = JSON.parse(metaContent);
-      expect(meta.meta.status).toBe("running");
-      expect(meta.meta.messages[0].messageStatus).toBe(
-        "acknowledged_by_subagent"
-      );
+      expect(meta.status).toBe("running");
+      expect(meta.messages[0].messageStatus).toBe("acknowledged_by_subagent");
     });
 
     it("should handle invalid runId", async () => {
@@ -331,10 +326,8 @@ describe("Bi-directional Communication", () => {
       // Verify meta file status remains running
       const metaContent = await fs.readFile(testMetaPath, "utf-8");
       const meta = JSON.parse(metaContent);
-      expect(meta.meta.status).toBe("running");
-      expect(meta.meta.messages[0].messageStatus).toBe(
-        "acknowledged_by_subagent"
-      );
+      expect(meta.status).toBe("running");
+      expect(meta.messages[0].messageStatus).toBe("acknowledged_by_subagent");
     });
   });
 
@@ -386,10 +379,8 @@ describe("Bi-directional Communication", () => {
       // 4. Verify final state
       const metaContent = await fs.readFile(testMetaPath, "utf-8");
       const meta = JSON.parse(metaContent);
-      expect(meta.meta.status).toBe("running");
-      expect(meta.meta.messages[0].messageStatus).toBe(
-        "acknowledged_by_subagent"
-      );
+      expect(meta.status).toBe("running");
+      expect(meta.messages[0].messageStatus).toBe("acknowledged_by_subagent");
     });
   });
 });

@@ -322,21 +322,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { runId } = CheckSubagentStatusArgumentsSchema.parse(args);
 
       const statusObject = await checkSubagentStatus(runId, LOG_DIR);
-      const meta = statusObject.meta || statusObject;
       const outputParts = [];
 
-      outputParts.push(`Run ID: ${meta.runId || runId}`);
-      outputParts.push(`Agent Name: ${meta.agentName || "N/A"}`);
-      outputParts.push(`Status: ${meta.status || "N/A"}`);
-      outputParts.push(`Exit Code: ${meta.exitCode ?? "N/A"}`);
-      outputParts.push(`Start Time: ${meta.startTime || "N/A"}`);
-      outputParts.push(`End Time: ${meta.endTime || "N/A"}`);
-      outputParts.push(`Summary: ${meta.summary || "N/A"}`);
+      outputParts.push(`Run ID: ${statusObject.runId || runId}`);
+      outputParts.push(`Agent Name: ${statusObject.agentName || "N/A"}`);
+      outputParts.push(`Status: ${statusObject.status || "N/A"}`);
+      outputParts.push(`Exit Code: ${statusObject.exitCode ?? "N/A"}`);
+      outputParts.push(`Start Time: ${statusObject.startTime || "N/A"}`);
+      outputParts.push(`End Time: ${statusObject.endTime || "N/A"}`);
+      outputParts.push(`Summary: ${statusObject.summary || "N/A"}`);
 
       // Bi-directional communication details
-      if (Array.isArray(meta.messages) && meta.messages.length > 0) {
-        if (meta.status === "waiting_parent_reply") {
-          const pendingMessage = meta.messages
+      if (
+        Array.isArray(statusObject.messages) &&
+        statusObject.messages.length > 0
+      ) {
+        if (statusObject.status === "waiting_parent_reply") {
+          const pendingMessage = statusObject.messages
             .slice()
             .reverse()
             .find(
@@ -355,11 +357,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             outputParts.push(`  To reply, use the 'reply_subagent' tool.`);
           }
         } else if (
-          meta.status === "parent_replied" ||
-          meta.status === "running"
+          statusObject.status === "parent_replied" ||
+          statusObject.status === "running"
         ) {
           // Find the most recent message with an answer and acknowledged_by_subagent status
-          const repliedMessage = meta.messages
+          const repliedMessage = statusObject.messages
             .slice()
             .reverse()
             .find(

@@ -40,25 +40,22 @@ describe("Status handling integration", () => {
         runId,
         agentName: "test",
         status: "waiting_parent_reply",
-        meta: {
-          status: "waiting_parent_reply",
-          messages: [
-            {
-              messageId: "msg-1",
-              questionContent: "What should I do?",
-              questionTimestamp: "2025-01-01T00:00:00.000Z",
-              answerContent: "",
-              answerTimestamp: "",
-              messageStatus: "pending_parent_reply",
-            },
-          ],
-        },
+        messages: [
+          {
+            messageId: "msg-1",
+            questionContent: "What should I do?",
+            questionTimestamp: "2025-01-01T00:00:00.000Z",
+            answerContent: "",
+            answerTimestamp: "",
+            messageStatus: "pending_parent_reply",
+          },
+        ],
       };
 
       await fs.writeJson(metaPath, metadata);
       const status = await checkSubagentStatus(runId, logDir);
 
-      expect(status.meta.status).toBe("waiting_parent_reply");
+      expect(status.status).toBe("waiting_parent_reply");
       expect(status.messages).toHaveLength(1);
       expect(status.messages[0].messageStatus).toBe("pending_parent_reply");
       expect(status.logFile).toBe(path.join(logDir, `${runId}.log`));
@@ -70,32 +67,29 @@ describe("Status handling integration", () => {
         runId,
         agentName: "test",
         status: "parent_replied",
-        meta: {
-          status: "parent_replied",
-          messages: [
-            {
-              messageId: "msg-1",
-              questionContent: "What should I do?",
-              questionTimestamp: "2025-01-01T00:00:00.000Z",
-              answerContent: "Do this task",
-              answerTimestamp: "2025-01-01T00:01:00.000Z",
-              messageStatus: "parent_replied",
-            },
-          ],
-        },
+        messages: [
+          {
+            messageId: "msg-1",
+            questionContent: "What should I do?",
+            questionTimestamp: "2025-01-01T00:00:00.000Z",
+            answerContent: "Do this task",
+            answerTimestamp: "2025-01-01T00:01:00.000Z",
+            messageStatus: "parent_replied",
+          },
+        ],
       };
 
       await fs.writeJson(metaPath, metadata);
       const status = await checkSubagentStatus(runId, logDir);
 
       // Status should remain parent_replied (no auto-acknowledgment)
-      expect(status.meta.status).toBe("parent_replied");
+      expect(status.status).toBe("parent_replied");
       expect(status.messages[0].messageStatus).toBe("parent_replied");
 
       // Verify the file was NOT updated
       const unchangedMetadata = await fs.readJson(metaPath);
-      expect(unchangedMetadata.meta.status).toBe("parent_replied");
-      expect(unchangedMetadata.meta.messages[0].messageStatus).toBe(
+      expect(unchangedMetadata.status).toBe("parent_replied");
+      expect(unchangedMetadata.messages[0].messageStatus).toBe(
         "parent_replied"
       );
     });
@@ -121,57 +115,35 @@ describe("Status handling integration", () => {
       expect(status.logDirectory).toBe(logDir);
     });
 
-    it("should handle mixed new and legacy structure", async () => {
-      const mixedMetadata = {
-        runId,
-        agentName: "test",
-        status: "completed", // Legacy top-level status
-        meta: {
-          status: "running", // Newer nested status (should take precedence)
-          messages: [],
-        },
-      };
-
-      await fs.writeJson(metaPath, mixedMetadata);
-      const status = await checkSubagentStatus(runId, logDir);
-
-      // meta.status should take precedence
-      const meta = status.meta || status;
-      expect(meta.status).toBe("running");
-    });
-
     it("should handle multiple parent_replied messages without acknowledgment", async () => {
       const metadata = {
         runId,
         agentName: "test",
         status: "parent_replied",
-        meta: {
-          status: "parent_replied",
-          messages: [
-            {
-              messageId: "msg-1",
-              questionContent: "First question?",
-              questionTimestamp: "2025-01-01T00:00:00.000Z",
-              answerContent: "First answer",
-              answerTimestamp: "2025-01-01T00:01:00.000Z",
-              messageStatus: "acknowledged_by_subagent", // Already acknowledged
-            },
-            {
-              messageId: "msg-2",
-              questionContent: "Second question?",
-              questionTimestamp: "2025-01-01T00:02:00.000Z",
-              answerContent: "Second answer",
-              answerTimestamp: "2025-01-01T00:03:00.000Z",
-              messageStatus: "parent_replied", // Should remain unchanged
-            },
-          ],
-        },
+        messages: [
+          {
+            messageId: "msg-1",
+            questionContent: "First question?",
+            questionTimestamp: "2025-01-01T00:00:00.000Z",
+            answerContent: "First answer",
+            answerTimestamp: "2025-01-01T00:01:00.000Z",
+            messageStatus: "acknowledged_by_subagent", // Already acknowledged
+          },
+          {
+            messageId: "msg-2",
+            questionContent: "Second question?",
+            questionTimestamp: "2025-01-01T00:02:00.000Z",
+            answerContent: "Second answer",
+            answerTimestamp: "2025-01-01T00:03:00.000Z",
+            messageStatus: "parent_replied", // Should remain unchanged
+          },
+        ],
       };
 
       await fs.writeJson(metaPath, metadata);
       const status = await checkSubagentStatus(runId, logDir);
 
-      expect(status.meta.status).toBe("parent_replied");
+      expect(status.status).toBe("parent_replied");
       expect(status.messages[0].messageStatus).toBe("acknowledged_by_subagent"); // Should remain unchanged
       expect(status.messages[1].messageStatus).toBe("parent_replied"); // Should remain unchanged
     });
@@ -181,19 +153,16 @@ describe("Status handling integration", () => {
         runId,
         agentName: "test",
         status: "running",
-        meta: {
-          status: "running",
-          messages: [],
-        },
+        messages: [],
       };
 
       await fs.writeJson(metaPath, metadata);
       const status = await checkSubagentStatus(runId, logDir);
 
-      expect(status.meta.status).toBe("running");
+      expect(status.status).toBe("running");
       // The function doesn't automatically add messages for non-communication statuses
       // It only adds it for waiting_parent_reply and parent_replied
-      expect(status.meta.messages).toEqual([]);
+      expect(status.messages).toEqual([]);
     });
 
     it("should handle missing messages property", async () => {
@@ -201,18 +170,15 @@ describe("Status handling integration", () => {
         runId,
         agentName: "test",
         status: "running",
-        meta: {
-          status: "running",
-          // messages property is missing
-        },
+        // messages property is missing
       };
 
       await fs.writeJson(metaPath, metadata);
       const status = await checkSubagentStatus(runId, logDir);
 
-      expect(status.meta.status).toBe("running");
+      expect(status.status).toBe("running");
       // The function doesn't automatically add messages for non-communication statuses
-      expect(status.meta.messages).toBeUndefined();
+      expect(status.messages).toBeUndefined();
     });
   });
 

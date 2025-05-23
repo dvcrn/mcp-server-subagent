@@ -39,23 +39,12 @@ export async function checkMessageStatusHandler(
     throw new Error(`Meta file for runId ${runId} is not valid JSON: ${err}`);
   }
 
-  // Handle both flat and nested metadata structures
-  // If metadata.meta doesn't exist, create the nested structure
-  if (!metadata.meta) {
-    metadata.meta = {
-      status: metadata.status || "running",
-      messages: [],
-    };
-  }
-
-  const meta = metadata.meta;
-
   // Find the message
-  if (!Array.isArray(meta.messages)) {
+  if (!Array.isArray(metadata.messages)) {
     throw new Error(`No messages found for runId ${runId}`);
   }
 
-  const messageIndex = meta.messages.findIndex(
+  const messageIndex = metadata.messages.findIndex(
     (msg: CommunicationMessage) => msg.messageId === messageId
   );
 
@@ -63,7 +52,7 @@ export async function checkMessageStatusHandler(
     throw new Error(`Message with ID ${messageId} not found`);
   }
 
-  const message = meta.messages[messageIndex];
+  const message = metadata.messages[messageIndex];
 
   // Prepare the output
   const output = {
@@ -78,16 +67,10 @@ export async function checkMessageStatusHandler(
   // If the message status is "parent_replied", acknowledge it and update status
   if (message.messageStatus === "parent_replied") {
     // Update message status to acknowledged
-    meta.messages[messageIndex].messageStatus = "acknowledged_by_subagent";
+    metadata.messages[messageIndex].messageStatus = "acknowledged_by_subagent";
 
     // Update overall status back to running
-    meta.status = "running";
-    if (metadata.meta) {
-      metadata.meta.status = "running";
-    }
-    if (metadata.status) {
-      metadata.status = "running";
-    }
+    metadata.status = "running";
 
     // Write back the updated metadata
     await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));

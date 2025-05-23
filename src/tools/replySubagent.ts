@@ -49,29 +49,20 @@ export const replySubagentHandler = async (
     throw new Error(`Could not read meta file: ${metaPath}`);
   }
 
-  let meta: any;
+  let metadata: any;
   try {
-    meta = JSON.parse(metaRaw);
+    metadata = JSON.parse(metaRaw);
   } catch (err) {
     throw new Error(`Invalid JSON in meta file: ${metaPath}`);
   }
 
-  // Handle both flat and nested metadata structures
-  // If meta.meta doesn't exist, create the nested structure
-  if (!meta.meta) {
-    meta.meta = {
-      status: meta.status || "running",
-      messages: [],
-    };
-  }
-
   // Ensure messages array is initialized
-  if (!Array.isArray(meta.meta.messages)) {
-    meta.meta.messages = [];
+  if (!Array.isArray(metadata.messages)) {
+    metadata.messages = [];
   }
 
   // Find the message
-  const msg = meta.meta.messages?.find(
+  const msg = metadata.messages?.find(
     (m: CommunicationMessage) => m.messageId === messageId
   );
   if (!msg) {
@@ -89,16 +80,15 @@ export const replySubagentHandler = async (
   msg.answerTimestamp = new Date().toISOString();
   msg.messageStatus = "parent_replied";
 
-  // Update meta status
-  meta.status = "parent_replied";
-  meta.meta.status = "parent_replied";
+  // Update metadata status
+  metadata.status = "parent_replied";
 
   // Write back to .meta.json
-  await fs.writeFile(metaPath, JSON.stringify(meta, null, 2), "utf8");
+  await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2), "utf8");
 
   return {
     success: true,
     message: "Parent reply recorded and metadata updated.",
-    updatedMetadata: meta,
+    updatedMetadata: metadata,
   };
 };

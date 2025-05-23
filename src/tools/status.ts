@@ -16,12 +16,12 @@ export async function checkSubagentStatus(
       const metadata = JSON.parse(metadataContent);
 
       // Enhanced status handling for bi-directional communication
-      const meta = metadata.meta || metadata; // fallback for legacy structure
-
-      if (["waiting_parent_reply", "parent_replied"].includes(meta.status)) {
+      if (
+        ["waiting_parent_reply", "parent_replied"].includes(metadata.status)
+      ) {
         return {
           ...metadata,
-          messages: meta.messages ?? [],
+          messages: metadata.messages ?? [],
           logFile,
           logDirectory: logDir,
         };

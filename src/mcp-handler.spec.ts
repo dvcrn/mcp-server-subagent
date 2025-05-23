@@ -8,21 +8,23 @@ import { checkSubagentStatus } from "./tools/status.js";
 
 // This simulates the formatting logic from index.ts check_subagent_status handler
 function formatStatusOutput(statusObject: any, runId: string) {
-  const meta = statusObject.meta || statusObject;
   const outputParts = [];
 
-  outputParts.push(`Run ID: ${meta.runId || runId}`);
-  outputParts.push(`Agent Name: ${meta.agentName || "N/A"}`);
-  outputParts.push(`Status: ${meta.status || "N/A"}`);
-  outputParts.push(`Exit Code: ${meta.exitCode ?? "N/A"}`);
-  outputParts.push(`Start Time: ${meta.startTime || "N/A"}`);
-  outputParts.push(`End Time: ${meta.endTime || "N/A"}`);
-  outputParts.push(`Summary: ${meta.summary || "N/A"}`);
+  outputParts.push(`Run ID: ${statusObject.runId || runId}`);
+  outputParts.push(`Agent Name: ${statusObject.agentName || "N/A"}`);
+  outputParts.push(`Status: ${statusObject.status || "N/A"}`);
+  outputParts.push(`Exit Code: ${statusObject.exitCode ?? "N/A"}`);
+  outputParts.push(`Start Time: ${statusObject.startTime || "N/A"}`);
+  outputParts.push(`End Time: ${statusObject.endTime || "N/A"}`);
+  outputParts.push(`Summary: ${statusObject.summary || "N/A"}`);
 
   // Bi-directional communication details
-  if (Array.isArray(meta.messages) && meta.messages.length > 0) {
-    if (meta.status === "waiting_parent_reply") {
-      const pendingMessage = meta.messages
+  if (
+    Array.isArray(statusObject.messages) &&
+    statusObject.messages.length > 0
+  ) {
+    if (statusObject.status === "waiting_parent_reply") {
+      const pendingMessage = statusObject.messages
         .slice()
         .reverse()
         .find((m: any) => m.messageStatus === "pending_parent_reply");
@@ -35,9 +37,12 @@ function formatStatusOutput(statusObject: any, runId: string) {
         outputParts.push(`  (Asked at: ${pendingMessage.questionTimestamp})`);
         outputParts.push(`  To reply, use the 'reply_subagent' tool.`);
       }
-    } else if (meta.status === "parent_replied" || meta.status === "running") {
+    } else if (
+      statusObject.status === "parent_replied" ||
+      statusObject.status === "running"
+    ) {
       // Find the most recent message with an answer and acknowledged_by_subagent status
-      const repliedMessage = meta.messages
+      const repliedMessage = statusObject.messages
         .slice()
         .reverse()
         .find(
@@ -144,19 +149,16 @@ describe("MCP status handler output formatting", () => {
         runId,
         agentName: "test-agent",
         status: "waiting_parent_reply",
-        meta: {
-          status: "waiting_parent_reply",
-          messages: [
-            {
-              messageId: "msg-123",
-              questionContent: "Should I proceed with the task?",
-              questionTimestamp: "2025-01-01T00:02:00.000Z",
-              answerContent: "",
-              answerTimestamp: "",
-              messageStatus: "pending_parent_reply",
-            },
-          ],
-        },
+        messages: [
+          {
+            messageId: "msg-123",
+            questionContent: "Should I proceed with the task?",
+            questionTimestamp: "2025-01-01T00:02:00.000Z",
+            answerContent: "",
+            answerTimestamp: "",
+            messageStatus: "pending_parent_reply",
+          },
+        ],
       };
 
       await fs.writeJson(metaPath, metadata);
@@ -177,23 +179,20 @@ describe("MCP status handler output formatting", () => {
         runId,
         agentName: "test-agent",
         status: "waiting_parent_reply",
-        meta: {
-          status: "waiting_parent_reply",
-          messages: [
-            {
-              messageId: "msg-1",
-              questionContent: "First question?",
-              questionTimestamp: "2025-01-01T00:01:00.000Z",
-              messageStatus: "pending_parent_reply",
-            },
-            {
-              messageId: "msg-2",
-              questionContent: "Latest question?",
-              questionTimestamp: "2025-01-01T00:03:00.000Z",
-              messageStatus: "pending_parent_reply",
-            },
-          ],
-        },
+        messages: [
+          {
+            messageId: "msg-1",
+            questionContent: "First question?",
+            questionTimestamp: "2025-01-01T00:01:00.000Z",
+            messageStatus: "pending_parent_reply",
+          },
+          {
+            messageId: "msg-2",
+            questionContent: "Latest question?",
+            questionTimestamp: "2025-01-01T00:03:00.000Z",
+            messageStatus: "pending_parent_reply",
+          },
+        ],
       };
 
       await fs.writeJson(metaPath, metadata);
@@ -210,19 +209,16 @@ describe("MCP status handler output formatting", () => {
         runId,
         agentName: "test-agent",
         status: "running",
-        meta: {
-          status: "running",
-          messages: [
-            {
-              messageId: "msg-456",
-              questionContent: "What's the next step?",
-              questionTimestamp: "2025-01-01T00:02:00.000Z",
-              answerContent: "Continue with phase 2",
-              answerTimestamp: "2025-01-01T00:03:00.000Z",
-              messageStatus: "acknowledged_by_subagent",
-            },
-          ],
-        },
+        messages: [
+          {
+            messageId: "msg-456",
+            questionContent: "What's the next step?",
+            questionTimestamp: "2025-01-01T00:02:00.000Z",
+            answerContent: "Continue with phase 2",
+            answerTimestamp: "2025-01-01T00:03:00.000Z",
+            messageStatus: "acknowledged_by_subagent",
+          },
+        ],
       };
 
       await fs.writeJson(metaPath, metadata);
@@ -242,19 +238,16 @@ describe("MCP status handler output formatting", () => {
         runId,
         agentName: "test-agent",
         status: "parent_replied",
-        meta: {
-          status: "parent_replied",
-          messages: [
-            {
-              messageId: "msg-789",
-              questionContent: "Need clarification on requirements",
-              questionTimestamp: "2025-01-01T00:01:00.000Z",
-              answerContent: "Here are the clarified requirements",
-              answerTimestamp: "2025-01-01T00:02:30.000Z",
-              messageStatus: "parent_replied",
-            },
-          ],
-        },
+        messages: [
+          {
+            messageId: "msg-789",
+            questionContent: "Need clarification on requirements",
+            questionTimestamp: "2025-01-01T00:01:00.000Z",
+            answerContent: "Here are the clarified requirements",
+            answerTimestamp: "2025-01-01T00:02:30.000Z",
+            messageStatus: "parent_replied",
+          },
+        ],
       };
 
       await fs.writeJson(metaPath, metadata);
@@ -277,27 +270,24 @@ describe("MCP status handler output formatting", () => {
         runId,
         agentName: "test-agent",
         status: "running",
-        meta: {
-          status: "running",
-          messages: [
-            {
-              messageId: "msg-1",
-              questionContent: "First question?",
-              questionTimestamp: "2025-01-01T00:01:00.000Z",
-              answerContent: "First answer",
-              answerTimestamp: "2025-01-01T00:02:00.000Z",
-              messageStatus: "acknowledged_by_subagent",
-            },
-            {
-              messageId: "msg-2",
-              questionContent: "Latest question?",
-              questionTimestamp: "2025-01-01T00:03:00.000Z",
-              answerContent: "Latest answer",
-              answerTimestamp: "2025-01-01T00:04:00.000Z",
-              messageStatus: "acknowledged_by_subagent",
-            },
-          ],
-        },
+        messages: [
+          {
+            messageId: "msg-1",
+            questionContent: "First question?",
+            questionTimestamp: "2025-01-01T00:01:00.000Z",
+            answerContent: "First answer",
+            answerTimestamp: "2025-01-01T00:02:00.000Z",
+            messageStatus: "acknowledged_by_subagent",
+          },
+          {
+            messageId: "msg-2",
+            questionContent: "Latest question?",
+            questionTimestamp: "2025-01-01T00:03:00.000Z",
+            answerContent: "Latest answer",
+            answerTimestamp: "2025-01-01T00:04:00.000Z",
+            messageStatus: "acknowledged_by_subagent",
+          },
+        ],
       };
 
       await fs.writeJson(metaPath, metadata);
@@ -315,10 +305,7 @@ describe("MCP status handler output formatting", () => {
         runId,
         agentName: "test-agent",
         status: "running",
-        meta: {
-          status: "running",
-          messages: [],
-        },
+        messages: [],
       };
 
       await fs.writeJson(metaPath, metadata);
@@ -335,10 +322,7 @@ describe("MCP status handler output formatting", () => {
         runId,
         agentName: "test-agent",
         status: "running",
-        meta: {
-          status: "running",
-          // messages property is missing
-        },
+        // messages property is missing
       };
 
       await fs.writeJson(metaPath, metadata);

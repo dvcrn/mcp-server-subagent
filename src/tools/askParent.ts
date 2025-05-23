@@ -34,30 +34,21 @@ export async function askParentHandler(
     throw new Error(`Could not read meta file for runId ${runId}: ${err}`);
   }
 
-  let meta: any;
+  let metadata: any;
   try {
-    meta = JSON.parse(metaRaw);
+    metadata = JSON.parse(metaRaw);
   } catch (err) {
     throw new Error(`Meta file for runId ${runId} is not valid JSON: ${err}`);
   }
 
-  // Handle both flat and nested metadata structures
-  // If meta.meta doesn't exist, create the nested structure
-  if (!meta.meta) {
-    meta.meta = {
-      status: meta.status || "running",
-      messages: [],
-    };
-  }
-
-  // Validate and coerce to schema (now that we have the nested structure)
-  const parsed = MetaFileContentSchema.safeParse(meta);
+  // Validate the flat metadata structure
+  const parsed = MetaFileContentSchema.safeParse(metadata);
   if (!parsed.success) {
     throw new Error(
       `Meta file for runId ${runId} does not match schema: ${parsed.error}`
     );
   }
-  meta = parsed.data;
+  metadata = parsed.data;
 
   // Prepare new message
   const messageId = uuidv4();
@@ -72,20 +63,16 @@ export async function askParentHandler(
   };
 
   // Ensure messages array is initialized
-  if (!Array.isArray(meta.meta.messages)) {
-    meta.meta.messages = [];
+  if (!Array.isArray(metadata.messages)) {
+    metadata.messages = [];
   }
-  meta.meta.messages.push(newMessage);
+  metadata.messages.push(newMessage);
 
   // Update status
-  meta.meta.status = "waiting_parent_reply";
+  metadata.status = "waiting_parent_reply";
 
   // Write back
-  console.log(
-    "DEBUG: Writing updated meta file:",
-    JSON.stringify(meta, null, 2)
-  );
-  await fs.writeFile(metaPath, JSON.stringify(meta, null, 2));
+  await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
 
   return {
     messageId,
