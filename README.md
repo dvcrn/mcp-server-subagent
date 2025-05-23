@@ -4,6 +4,8 @@ This is a Model Context Protocol (MCP) server that allows dispatching of tasks t
 
 The purpose of this MCP is to allow a "planning" agent to delegate tasks to "executor" agents
 
+![screenshot](./screenshot.png)
+
 ## Features
 
 - Configure and run sub-agents through MCP tools
@@ -49,21 +51,24 @@ npm start
 ### Running the Server
 
 If installed globally:
+
 ```bash
 mcp-server-subagent
 ```
 
 Using npx:
+
 ```bash
 npx mcp-server-subagent
 ```
 
 Local installation:
+
 ```bash
 npm start
 ```
 
-### Configuring in your editor 
+### Configuring in your editor
 
 Add this to your Amazon Q MCP configuration file (`~/.aws/amazonq/mcp.json`):
 
@@ -104,11 +109,13 @@ Or if you installed it locally:
   - Returns: The status and metadata of the run
 
 - `get_subagent_q_logs`: Get the logs of a previous Amazon Q run
+
   - Parameters: `runId` (string) - The UUID of the run to get logs for
   - Returns: The complete logs of the run
 
 - `update_subagent_q_status`: Update the status and add a summary of a previous Amazon Q run
-  - Parameters: 
+
+  - Parameters:
     - `runId` (string) - The UUID of the run to update
     - `status` (string) - The new status to set (one of: "success", "error", "running", "completed")
     - `summary` (string, optional) - A summary or result message to include with the status update
@@ -125,11 +132,12 @@ Or if you installed it locally:
   - Returns: The status and metadata of the run
 
 - `get_subagent_claude_logs`: Get the logs of a previous Claude run
+
   - Parameters: `runId` (string) - The UUID of the run to get logs for
   - Returns: The complete logs of the run
 
 - `update_subagent_claude_status`: Update the status and add a summary of a previous Claude run
-  - Parameters: 
+  - Parameters:
     - `runId` (string) - The UUID of the run to update
     - `status` (string) - The new status to set (one of: "success", "error", "running", "completed")
     - `summary` (string, optional) - A summary or result message to include with the status update
@@ -144,7 +152,12 @@ const SUBAGENTS = {
   q: {
     name: "q",
     command: "q",
-    getArgs: (input: string) => ["chat", "--trust-all-tools", "--no-interactive", input],
+    getArgs: (input: string) => [
+      "chat",
+      "--trust-all-tools",
+      "--no-interactive",
+      input,
+    ],
     description: "Run a query through the Amazon Q CLI",
   },
   claude: {
