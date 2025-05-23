@@ -49,16 +49,25 @@ export const replySubagentHandler = async (
     throw new Error(`Could not read meta file: ${metaPath}`);
   }
 
-  let meta: MetaFileContent;
+  let meta: any;
   try {
     meta = JSON.parse(metaRaw);
   } catch (err) {
     throw new Error(`Invalid JSON in meta file: ${metaPath}`);
   }
 
+  // Handle both flat and nested metadata structures
+  // If meta.meta doesn't exist, create the nested structure
+  if (!meta.meta) {
+    meta.meta = {
+      status: meta.status || "running",
+      messages: [],
+    };
+  }
+
   // Ensure messages array is initialized
-  if (!Array.isArray(meta.messages)) {
-    meta.messages = [];
+  if (!Array.isArray(meta.meta.messages)) {
+    meta.meta.messages = [];
   }
 
   // Find the message

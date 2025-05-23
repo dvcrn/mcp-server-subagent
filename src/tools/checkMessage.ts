@@ -39,7 +39,16 @@ export async function checkMessageStatusHandler(
     throw new Error(`Meta file for runId ${runId} is not valid JSON: ${err}`);
   }
 
-  const meta = metadata.meta || metadata; // fallback for legacy structure
+  // Handle both flat and nested metadata structures
+  // If metadata.meta doesn't exist, create the nested structure
+  if (!metadata.meta) {
+    metadata.meta = {
+      status: metadata.status || "running",
+      messages: [],
+    };
+  }
+
+  const meta = metadata.meta;
 
   // Find the message
   if (!Array.isArray(meta.messages)) {

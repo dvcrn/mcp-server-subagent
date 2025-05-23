@@ -41,7 +41,16 @@ export async function askParentHandler(
     throw new Error(`Meta file for runId ${runId} is not valid JSON: ${err}`);
   }
 
-  // Validate and coerce to schema
+  // Handle both flat and nested metadata structures
+  // If meta.meta doesn't exist, create the nested structure
+  if (!meta.meta) {
+    meta.meta = {
+      status: meta.status || "running",
+      messages: [],
+    };
+  }
+
+  // Validate and coerce to schema (now that we have the nested structure)
   const parsed = MetaFileContentSchema.safeParse(meta);
   if (!parsed.success) {
     throw new Error(
