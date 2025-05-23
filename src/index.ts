@@ -20,6 +20,11 @@ import {
 import { runSubagent } from "./tools/run.js";
 import { checkSubagentStatus, updateSubagentStatus } from "./tools/status.js";
 import { getSubagentLogs } from "./tools/logs.js";
+import {
+  AskParentInputSchema,
+  AskParentOutputSchema,
+  askParentHandler,
+} from "./tools/askParent.js";
 
 // Function to determine the log directory with fallbacks
 function getLogDir(): string {
@@ -320,6 +325,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           },
         ],
       };
+    }
+
+    // Handle ask_parent tool
+    if (name === "ask_parent") {
+      const parsed = AskParentInputSchema.parse(args);
+      const result = await askParentHandler(parsed);
+      AskParentOutputSchema.parse(result); // Validate output
+      return { content: [{ type: "json", json: result }] };
     }
 
     throw new Error(`Unknown tool: ${name}`);
