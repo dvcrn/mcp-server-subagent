@@ -10,7 +10,7 @@ export async function runSubagent(
   subagent: SubagentConfig, // Use SubagentConfig type
   input: string,
   cwd: string,
-  logDir: string
+  logDir: string,
 ): Promise<string> {
   if (!subagent) {
     throw new Error(`Subagent configuration is missing.`);
@@ -28,6 +28,8 @@ This is a sub-task executed by an automated agent.
 Your unique run ID for this task is: ${runId}.
 You MUST report your final status and results using the MCP tool: ${toolName}.
 Ensure all necessary information is included in your update via this tool.
+
+You are able to ask the commander/manager for clarification if something is unclear using the 'ask_parent' tool.
 
 If you are unable to complete the task, please provide a detailed error as summary in the tool call ${toolName} and set the status to 'error'.
 
@@ -72,7 +74,7 @@ Instructions are the following:
   try {
     // Log the command being executed (for debugging)
     console.error(
-      `Executing: cat "${promptFile}" | ${command} ${args.join(" ")}`
+      `Executing: cat "${promptFile}" | ${command} ${args.join(" ")}`,
     );
 
     // Use spawn for the shell pipeline
@@ -90,12 +92,12 @@ Instructions are the following:
     logStream.write(
       `[${new Date().toISOString()}] Starting ${
         subagent.name
-      } with input: ${input}\n`
+      } with input: ${input}\n`,
     );
     logStream.write(
       `[${new Date().toISOString()}] Command: cat "${promptFile}" | ${command} ${args.join(
-        " "
-      )}\n`
+        " ",
+      )}\n`,
     );
 
     // Stream stdout to log file in real-time
@@ -123,7 +125,7 @@ Instructions are the following:
       } catch (readError) {
         console.error(
           `Error reading metadata file ${metadataFile} on process close:`,
-          readError
+          readError,
         );
         currentMetadata = metadata;
       }
@@ -160,7 +162,7 @@ Instructions are the following:
 
       await fs.writeFile(
         metadataFile,
-        JSON.stringify(updatedMetadata, null, 2)
+        JSON.stringify(updatedMetadata, null, 2),
       );
     });
 
