@@ -78,7 +78,7 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
       "--output-format",
       "stream-json",
       "--allowedTools",
-      "Bash(git*),Bash,Edit,Write,mcp__subagent__update_subagent_status,mcp__subagent__ask_parent,mcp__subagent__check_message_status",
+      "Bash(git*),Bash(make*),Bash(just*),Bash(npm*),Bash(node*),Bash(go*),Bash,Edit,Write,mcp__subagent__update_subagent_status,mcp__subagent__ask_parent,mcp__subagent__check_message_status",
       "--mcp-config",
       JSON.stringify(mcpConfig),
     ],
@@ -97,7 +97,7 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
-  }
+  },
 );
 
 // List available tools
@@ -290,7 +290,7 @@ export async function ensureLogDir() {
   }
 
   throw new Error(
-    "Unable to create log directory in any of the candidate locations"
+    "Unable to create log directory in any of the candidate locations",
   );
 }
 
@@ -347,21 +347,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             .reverse()
             .find(
               (m: CommunicationMessage) =>
-                m.messageStatus === "pending_parent_reply"
+                m.messageStatus === "pending_parent_reply",
             );
           if (pendingMessage) {
             outputParts.push(``);
             outputParts.push(
-              `Question awaiting reply (Message ID: ${pendingMessage.messageId}):`
+              `Question awaiting reply (Message ID: ${pendingMessage.messageId}):`,
             );
             outputParts.push(`  ${pendingMessage.questionContent}`);
             outputParts.push(
-              `  (Asked at: ${pendingMessage.questionTimestamp})`
+              `  (Asked at: ${pendingMessage.questionTimestamp})`,
             );
             outputParts.push(`  To reply, use the 'reply_subagent' tool.`);
             outputParts.push(``);
             outputParts.push(
-              `Note: This may take a while for the parent to respond. Use 'sleep 30' between status checks to avoid spamming.`
+              `Note: This may take a while for the parent to respond. Use 'sleep 30' between status checks to avoid spamming.`,
             );
           }
         } else if (
@@ -376,20 +376,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               (m: CommunicationMessage) =>
                 m.answerContent &&
                 (m.messageStatus === "acknowledged_by_subagent" ||
-                  m.messageStatus === "parent_replied")
+                  m.messageStatus === "parent_replied"),
             );
           if (repliedMessage) {
             outputParts.push(``);
             outputParts.push(
-              `Last Interaction (Message ID: ${repliedMessage.messageId}):`
+              `Last Interaction (Message ID: ${repliedMessage.messageId}):`,
             );
             outputParts.push(`  Question: ${repliedMessage.questionContent}`);
             outputParts.push(
-              `  (Asked at: ${repliedMessage.questionTimestamp})`
+              `  (Asked at: ${repliedMessage.questionTimestamp})`,
             );
             outputParts.push(`  Answer: ${repliedMessage.answerContent}`);
             outputParts.push(
-              `  (Answered at: ${repliedMessage.answerTimestamp})`
+              `  (Answered at: ${repliedMessage.answerTimestamp})`,
             );
           }
         }
@@ -399,7 +399,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (statusObject.status === "running") {
         outputParts.push(``);
         outputParts.push(
-          `Note: Task is still running. This may take a while. Use 'sleep 30' between status checks to avoid spamming.`
+          `Note: Task is still running. This may take a while. Use 'sleep 30' between status checks to avoid spamming.`,
         );
       } else if (
         statusObject.status === "waiting_parent_reply" &&
@@ -408,7 +408,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       ) {
         outputParts.push(``);
         outputParts.push(
-          `Note: Waiting for parent reply. This may take a while. Use 'sleep 30' between status checks to avoid spamming.`
+          `Note: Waiting for parent reply. This may take a while. Use 'sleep 30' between status checks to avoid spamming.`,
         );
       }
 
@@ -449,7 +449,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         runId,
         status,
         LOG_DIR,
-        summary
+        summary,
       );
 
       return {
@@ -459,7 +459,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             text: `Status for run ${runId} updated:\n\n${JSON.stringify(
               updatedStatus,
               null,
-              2
+              2,
             )}`,
           },
         ],
@@ -531,7 +531,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       throw new Error(
         `Invalid arguments: ${error.errors
           .map((e) => `${e.path.join(".")}: ${e.message}`)
-          .join(", ")}`
+          .join(", ")}`,
       );
     }
     throw error;
