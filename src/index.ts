@@ -78,7 +78,7 @@ export const SUBAGENTS: Record<string, SubagentConfig> = {
       "--output-format",
       "stream-json",
       "--allowedTools",
-      "Bash(git*),Bash(make*),Bash(just*),Bash(npm*),Bash(node*),Bash(go*),Bash,Edit,Write,mcp__subagent__update_subagent_status,mcp__subagent__ask_parent,mcp__subagent__check_message_status",
+      "Bash(git*),Bash(make*),Bash(just*),Bash(gh*),Bash(npm*),Bash(node*),Bash(go*),Bash,Edit,Write,mcp__subagent__update_subagent_status,mcp__subagent__ask_parent,mcp__subagent__check_message_status",
       "--mcp-config",
       JSON.stringify(mcpConfig),
     ],
