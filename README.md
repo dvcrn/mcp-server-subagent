@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/dvcrn-mcp-server-subagent-badge.png)](https://mseep.ai/app/dvcrn-mcp-server-subagent)
+
 # MCP Subagent Server
 
 This is a Model Context Protocol (MCP) server that allows dispatching of tasks to sub-agent (like Claude Code, Q or Aider)
